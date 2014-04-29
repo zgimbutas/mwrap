@@ -506,7 +506,7 @@ void mex_declare_dim_args(FILE* fp, Expr* e)
     if (!e)
         return;
     fprintf(fp, "    %-10s  dim%d_;   /* %-10s */\n", 
-            "int", e->input_label, e->value);
+            "mwSize", e->input_label, e->value);
     mex_declare_dim_args(fp, e->next);
 }
 
@@ -558,7 +558,7 @@ int mex_unpack_dims(FILE* fp, Expr* e)
     if (!e)
         return 0;
     fprintf(fp, 
-            "    dim%d_ = (int) mxWrapGetScalar(prhs[%d], &mw_err_txt_);\n",
+            "    dim%d_ = (mwSize) mxWrapGetScalar(prhs[%d], &mw_err_txt_);\n",
             e->input_label, e->input_label);
     return mex_unpack_dims(fp, e->next)+1;
 }
@@ -1329,8 +1329,8 @@ const char* mexBase =
 
 void print_mex_file(FILE* fp, Func* f)
 {
-    fprintf(fp, mwrap_banner);
-    fprintf(fp, mex_header);
+    fprintf(fp, "%s", mwrap_banner);
+    fprintf(fp, "%s", mex_header);
 
     if (mw_use_c99_complex)
         mex_c99_complex(fp);
@@ -1346,7 +1346,7 @@ void print_mex_file(FILE* fp, Func* f)
     }
 
     print_mex_stubs(fp, f);
-    fprintf(fp, mexBase);
+    fprintf(fp, "%s", mexBase);
     print_mex_else_cases(fp, f);
     fprintf(fp, "}\n\n");
 }

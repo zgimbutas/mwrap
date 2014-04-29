@@ -112,6 +112,7 @@ extern set<string> cscalar_decls;
 extern set<string> zscalar_decls;
 extern set<string> mxarray_decls;
 void init_scalar_types();
+char *promote_int(char* name);
 void add_scalar_type(const char* name);
 void add_cscalar_type(const char* name);
 void add_zscalar_type(const char* name);
@@ -135,6 +136,7 @@ void destroy_inherits();
 extern bool mw_generate_catch;
 extern bool mw_use_c99_complex;
 extern bool mw_use_cpp_complex;
+extern bool mw_promote_int;
 
 #endif /* MWRAP_AST_H */
 

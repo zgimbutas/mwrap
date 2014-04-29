@@ -25,11 +25,11 @@ test_c99_complex:
 	$(MEX) test_c99_complexmex.c
 
 test_syntax:
-	- ../mwrap -cppcomplex test_syntax.mw >& test_syntax.log
+	- ../mwrap -cppcomplex test_syntax.mw 2> test_syntax.log
 	diff test_syntax.log test_syntax.ref
 
 test_typecheck:
-	- ../mwrap -cppcomplex test_typecheck.mw >& test_typecheck.log
+	- ../mwrap -cppcomplex test_typecheck.mw 2> test_typecheck.log 
 	diff test_typecheck.log test_typecheck.ref
 
 test_catch:

@@ -15,3 +15,9 @@ src/mwrap.o
 src/mwrap.output
 src/stringify
 
+testing/test_fortran1mex.cc
+testing/test_fortran2mex.c
+testing/test_include.m
+testing/test_includemex.cc
+testing/test_syntax.log
+

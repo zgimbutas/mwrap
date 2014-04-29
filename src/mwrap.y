@@ -15,7 +15,7 @@
 extern "C" {
     int yylex();
     int yywrap();
-    int yyerror(char* s);
+    int yyerror(const char* s);
 }
 
 using std::string;
@@ -23,6 +23,7 @@ using std::string;
 bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
 bool  mw_use_c99_complex = false; // Use C99 complex types?
+bool  mw_promote_int = false;     // Convert integer types to mwSize?
 int   listing_flag = 0;           // Output filenames from @ commands?
 int   mbatching_flag = 0;         // Output on @ commands?
 int   linenum = 0;                // Lexer line number
@@ -33,7 +34,7 @@ static int    type_errs = 0;            // Number of typecheck errors
 static int    func_id = 0;              // Assign stub numbers
 static Func*  funcs   = 0;              // AST - linked list of functions
 static Func*  lastfunc = 0;             // Last link in funcs list
-static char*  mexfunc = "mexfunction";  // Name of mex function
+static const char*  mexfunc = "mexfunction";  // Name of mex function
 static string current_ifname;           // Current input file name
 
 
@@ -165,19 +166,19 @@ argsrest:
   ',' var argsrest {$$ = $2; $$->next = $3; }
   | { $$ = NULL; } ;
 
-basevar: ID ID               { $$ = new Var('o', $1, NULL, $2); }
-basevar: ID quals ID         { $$ = new Var('o', $1, $2,   $3); }
-basevar: ID ID aqual         { $$ = new Var('o', $1, $3,   $2); }
+basevar: ID ID               { $$ = new Var('o', promote_int($1), NULL, $2); }
+basevar: ID quals ID         { $$ = new Var('o', promote_int($1), $2,   $3); }
+basevar: ID ID aqual         { $$ = new Var('o', promote_int($1), $3,   $2); }
 
-var: iospec ID ID            { $$ = new Var($1,  $2, NULL, $3); }
-var: iospec ID quals ID      { $$ = new Var($1,  $2, $3,   $4); }
-var: iospec ID ID aqual      { $$ = new Var($1,  $2, $4,   $3); }
+var: iospec ID ID            { $$ = new Var($1,  promote_int($2), NULL, $3); }
+var: iospec ID quals ID      { $$ = new Var($1,  promote_int($2), $3,   $4); }
+var: iospec ID ID aqual      { $$ = new Var($1,  promote_int($2), $4,   $3); }
 
-var: iospec ID NUMBER        { $$ = new Var($1,  $2, NULL, $3); }
-var: iospec ID quals NUMBER  { $$ = new Var($1,  $2, $3,   $4); }
+var: iospec ID NUMBER        { $$ = new Var($1,  promote_int($2), NULL, $3); }
+var: iospec ID quals NUMBER  { $$ = new Var($1,  promote_int($2), $3,   $4); }
 
-var: iospec ID STRING        { $$ = new Var($1,  $2, NULL, $3); }
-var: iospec ID quals STRING  { $$ = new Var($1,  $2, $3,   $4); }
+var: iospec ID STRING        { $$ = new Var($1,  promote_int($2), NULL, $3); }
+var: iospec ID quals STRING  { $$ = new Var($1,  promote_int($2), $3,   $4); }
 
 iospec: 
   INPUT    { $$ = 'i'; }
@@ -230,7 +231,7 @@ int yywrap()
     return 1;
 }
 
-int yyerror(char* s)
+int yyerror(const char* s)
 {
     fprintf(stderr, "Parse error (%s:%d): %s\n", current_ifname.c_str(),
             linenum, s);
@@ -244,6 +245,8 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
+"mwrap 0.33.3 - MEX file generator for MATLAB and Octave\n"
+"\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"
 "        [-list] [-catch] infile1 infile2 ...\n"
@@ -254,6 +257,7 @@ const char* help_string =
 "  -mb            -- generate .m files specified with @ redirections\n"
 "  -list          -- list files specified with @ redirections\n"
 "  -catch         -- generate C++ exception handling code\n"
+"  -im            -- convert int, long, uint, and ulong types to mwSize\n"
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
 "\n";
@@ -265,7 +269,7 @@ int main(int argc, char** argv)
     init_scalar_types();
 
     if (argc == 1) {
-        fprintf(stderr, help_string);
+        fprintf(stderr, "%s", help_string);
         return 0;
     } else {
         for (j = 1; j < argc; ++j) {
@@ -281,6 +285,8 @@ int main(int argc, char** argv)
                 listing_flag = 1;
             if (strcmp(argv[j], "-catch") == 0)
                 mw_generate_catch = true;
+            if (strcmp(argv[j], "-im") == 0)
+                mw_promote_int = true;
             if (strcmp(argv[j], "-c99complex") == 0) 
                 mw_use_c99_complex = true;
             if (strcmp(argv[j], "-cppcomplex") == 0) 
@@ -300,6 +306,7 @@ int main(int argc, char** argv)
             else if (strcmp(argv[j], "-mb") == 0 ||
                      strcmp(argv[j], "-list") == 0 ||
                      strcmp(argv[j], "-catch") == 0 ||
+                     strcmp(argv[j], "-im") == 0 ||
                      strcmp(argv[j], "-c99complex") == 0 ||
                      strcmp(argv[j], "-cppcomplex") == 0);
             else {

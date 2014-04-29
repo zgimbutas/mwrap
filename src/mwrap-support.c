@@ -44,6 +44,20 @@
 
 
 /*
+ * Support for 32-bit and 64-bit MEX files
+ */
+#ifndef mwSize
+#  define mwSize int
+#endif
+#ifndef mwIndex
+#  define mwIndex int
+#endif
+#ifndef mwSignedIndex
+#  define mwSignedIndex int
+#endif
+
+
+/*
  * Records for call profile.
  */
 int* mexprofrecord_= NULL;
@@ -111,7 +125,7 @@ double mxWrapGetScalar(const mxArray* a, const char** e)
 char* mxWrapGetString(const mxArray* a, const char** e)
 {
     char* s;
-    int slen;
+    mwSize slen;
     if (!a || (!mxIsChar(a) && mxGetM(a)*mxGetN(a) > 0)) {
         *e = "Invalid string argument";
         return NULL;
@@ -130,8 +144,8 @@ char* mxWrapGetString(const mxArray* a, const char** e)
 T* func(const mxArray* a, const char** e)     \
 { \
     T* array; \
-    int arraylen; \
-    int i; \
+    mwSize arraylen; \
+    mwIndex i; \
     T* p; \
     double* q; \
     if (!a || mxGetClassID(a) != mxDOUBLE_CLASS) { \
@@ -149,9 +163,9 @@ T* func(const mxArray* a, const char** e)     \
 
 
 #define mxWrapCopyDef(func, T) \
-void func(mxArray* a, const T* q, int n) \
+void func(mxArray* a, const T* q, mwSize n) \
 { \
-    int i; \
+    mwIndex i; \
     double* p = mxGetPr(a); \
     for (i = 0; i < n; ++i) \
         *p++ = *q++; \
@@ -159,9 +173,9 @@ void func(mxArray* a, const T* q, int n) \
 
 
 #define mxWrapReturnDef(func, T) \
-mxArray* func(const T* q, int m, int n) \
+mxArray* func(const T* q, mwSize m, mwSize n) \
 { \
-    int i; \
+    mwIndex i; \
     double* p; \
     if (!q) { \
         return mxCreateDoubleMatrix(0,0, mxREAL); \
@@ -188,8 +202,8 @@ void func(T* z, const mxArray* a) \
 T* func(const mxArray* a, const char** e) \
 { \
     T* array; \
-    int arraylen; \
-    int i; \
+    mwSize arraylen; \
+    mwIndex i; \
     T* p; \
     double* qr; \
     double* qi; \
@@ -213,9 +227,9 @@ T* func(const mxArray* a, const char** e) \
 
 
 #define mxWrapCopyZDef(func, T, real, imag) \
-void func(mxArray* a, const T* q, int n) \
+void func(mxArray* a, const T* q, mwSize n) \
 { \
-    int i; \
+    mwIndex i; \
     double* pr = mxGetPr(a); \
     double* pi = mxGetPi(a); \
     for (i = 0; i < n; ++i) { \
@@ -227,9 +241,9 @@ void func(mxArray* a, const T* q, int n) \
 
 
 #define mxWrapReturnZDef(func, T, real, imag) \
-mxArray* func(const T* q, int m, int n) \
+mxArray* func(const T* q, mwSize m, mwSize n) \
 { \
-    int i; \
+    mwIndex i; \
     double* pr; \
     double* pi; \
     if (!q) { \

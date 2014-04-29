@@ -54,11 +54,26 @@ void init_scalar_types()
         "double", "float", 
         "long", "int", "char", 
         "ulong", "uint", "uchar",
-        "bool", "size_t", NULL};
+        "bool", "size_t", 
+        "mwSize", "mwIndex", "mwSignedIndex", NULL};
 
     for (const char** s = scalar_types; *s; ++s)
         add_scalar_type(*s);
 }
+
+
+char *promote_int(char* name)
+{
+  if( mw_promote_int == true )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("mwSize");
+      if( strcmp(name,"long") == 0 ) return strdup("mwSize");
+      if( strcmp(name,"uint") == 0 ) return strdup("mwSize");
+      if( strcmp(name,"ulong") == 0 ) return strdup("mwSize");
+    }
+  return name;
+}
+
 
 
 void add_scalar_type(const char* name)
