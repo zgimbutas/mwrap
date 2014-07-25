@@ -14,3 +14,13 @@ The user's guide (mwrap.pdf) describes MWrap in detail; you can also look at
 the example subdirectories and the testing subdirectory to get some idea of
 how MWrap is used.
 
+---
+
+mwrap-0.33.3
+
+commit c07eadb2cb2e76e4c75e51204928e3174d256dfe
+Author: Zydrunas Gimbutas <zydrunas.gimbutas@gmail.com>
+Date:   Tue Apr 29 16:12:51 2014 -0600
+
+    Add support for 64-bit Matlab and gcc-4.6, version 0.33.3
+
