@@ -1198,7 +1198,7 @@ void print_mex_stub(FILE* fp, Func* f)
 {
     print_c_comment(fp, f);
     fprintf(fp,
-            "const char* stubids%d_ = \"%s\";\n\n"
+            "static const char* stubids%d_ = \"%s\";\n\n"
             "void mexStub%d(int nlhs, mxArray* plhs[],\n"
             "              int nrhs, const mxArray* prhs[])\n"
             "{\n"
