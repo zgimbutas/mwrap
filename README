@@ -24,3 +24,9 @@ Date:   Tue Apr 29 16:12:51 2014 -0600
 
     Add support for 64-bit Matlab and gcc-4.6, version 0.33.3
 
+---
+
+mwrap-0.33.4
+
+    Add support for gcc 7.3+, version 0.33.4
+    
