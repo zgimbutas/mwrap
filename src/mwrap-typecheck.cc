@@ -229,7 +229,7 @@ int assign_tinfo(Var* v, int line)
         }
         if (v->qual && v->qual->args && v->qual->args->next) {
             fprintf(stderr, "Error (%d): ", line);
-            fprintf(stderr, "Strings are one dimensional\n", v->name);
+            fprintf(stderr, "Strings are one dimensional\n");
             return 1;
         }
         v->tinfo = VT_string;

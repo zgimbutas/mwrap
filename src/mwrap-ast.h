@@ -136,7 +136,7 @@ void destroy_inherits();
 extern bool mw_generate_catch;
 extern bool mw_use_c99_complex;
 extern bool mw_use_cpp_complex;
-extern bool mw_promote_int;
+extern int mw_promote_int;
 
 #endif /* MWRAP_AST_H */
 

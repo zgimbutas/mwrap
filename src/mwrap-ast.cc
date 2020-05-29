@@ -52,9 +52,11 @@ void init_scalar_types()
 {
     const char* scalar_types[] = {
         "double", "float", 
-        "long", "int", "char", 
-        "ulong", "uint", "uchar",
-        "bool", "size_t", 
+        "longlong", "long", "int", "short", "char", 
+        "ulonglong", "ulong", "uint", "ushort", "uchar",
+	"int32_t", "int64_t", "uint32_t", "uint64_t",
+	"float32_t", "float64_t",
+        "bool", "size_t", "ptrdiff_t", 
         "mwSize", "mwIndex", "mwSignedIndex", NULL};
 
     for (const char** s = scalar_types; *s; ++s)
@@ -64,12 +66,19 @@ void init_scalar_types()
 
 char *promote_int(char* name)
 {
-  if( mw_promote_int == true )
+  if( mw_promote_int == 1 )
     {      
-      if( strcmp(name,"int") == 0 ) return strdup("mwSize");
-      if( strcmp(name,"long") == 0 ) return strdup("mwSize");
-      if( strcmp(name,"uint") == 0 ) return strdup("mwSize");
-      if( strcmp(name,"ulong") == 0 ) return strdup("mwSize");
+      if( strcmp(name,"int") == 0 ) return strdup("mwSignedIndex");
+      if( strcmp(name,"long") == 0 ) return strdup("mwSignedIndex");
+      if( strcmp(name,"uint") == 0 ) return strdup("mwIndex");
+      if( strcmp(name,"ulong") == 0 ) return strdup("mwIndex");
+    }
+  if( mw_promote_int == 2 )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("ptrdiff_t");
+      if( strcmp(name,"long") == 0 ) return strdup("ptrdiff_t");
+      if( strcmp(name,"uint") == 0 ) return strdup("size_t");
+      if( strcmp(name,"ulong") == 0 ) return strdup("size_t");
     }
   return name;
 }
@@ -243,7 +252,7 @@ string id_string(Var* v)
         name += "o ";
     else
         name += "io ";
-    name += v->basetype;
+    name += promote_int(v->basetype);
     name += id_string(v->qual);
     if (v->tinfo == VT_const) {
         name += " ";

@@ -295,9 +295,9 @@ void mex_fortran_arg(FILE* fp, Var* v)
     if (!v)
         return;
     if (v->tinfo == VT_mx)
-        fprintf(fp, "const mxArray*", v->name);
+        fprintf(fp, "const mxArray*");
     else
-        fprintf(fp, "%s*", v->basetype, v->name);
+        fprintf(fp, "%s*", v->basetype);
     if (v->next) {
         fprintf(fp, ", ");
         mex_fortran_arg(fp, v->next);
@@ -374,7 +374,13 @@ void mex_casting_getter(FILE* fp, const char* cname,
             "{\n"
             "    char pbuf[128];\n"
             "    if (mxGetClassID(a) == mxDOUBLE_CLASS &&\n"
-            "        mxGetM(a)*mxGetN(a) == 1 && *mxGetPr(a) == 0)\n"
+            "        mxGetM(a)*mxGetN(a) == 1 &&\n"
+            "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+	    "        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)\n"
+	    "#else\n"
+	    "        *mxGetPr(a) == 0\n"
+	    "#endif\n"
+            "        )\n"
             "        return NULL;\n"
             "    if (!mxIsChar(a)) {\n"
             "#ifdef R2008OO\n"
@@ -670,10 +676,12 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 {
     fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n",
             v->input_label, v->input_label);
+    /*
     if (strcmp(v->basetype, "double") == 0 && v->iospec == 'i')
         fprintf(fp, "        in%d_ = mxGetPr(prhs[%d]);\n",
                 v->input_label, v->input_label);
     else
+    */
         fprintf(fp, 
                 "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n"
                 "        if (mw_err_txt_)\n"
@@ -682,7 +690,7 @@ void mex_unpack_input_array(FILE* fp, Var* v)
     fprintf(fp, 
             "    } else\n"
             "        in%d_ = NULL;\n", 
-            v->input_label, v->basetype);
+            v->input_label);
 }
 
 
@@ -1085,7 +1093,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 
 void mex_marshal_result(FILE* fp, Var* v, bool return_flag)
 {
-    char namebuf[128];
+    char namebuf[1280];
     if (is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
         if (!return_flag)
             fprintf(fp, "    plhs[%d] = mxWrapSet_%s(%s);\n",
@@ -1099,17 +1107,30 @@ void mex_marshal_result(FILE* fp, Var* v, bool return_flag)
     else if (v->tinfo == VT_scalar ||
              v->tinfo == VT_r_scalar ||
              v->tinfo == VT_p_scalar)
-        fprintf(fp, 
+        fprintf(fp,
+		"#if MX_HAS_INTERLEAVED_COMPLEX\n"
                 "    plhs[%d] = mxCreateDoubleMatrix(1, 1, mxREAL);\n"
-                "    *mxGetPr(plhs[%d]) = %s;\n",
-                v->output_label, v->output_label, vname(v, namebuf));
+                "    *mxGetDoubles(plhs[%d]) = %s;\n"
+		"#else\n"
+                "    plhs[%d] = mxCreateDoubleMatrix(1, 1, mxREAL);\n"
+                "    *mxGetPr(plhs[%d]) = %s;\n"
+		"#endif\n",
+                v->output_label, v->output_label, vname(v, namebuf),
+		v->output_label, v->output_label, vname(v, namebuf));
     else if (v->tinfo == VT_cscalar || v->tinfo == VT_zscalar || 
              v->tinfo == VT_r_cscalar || v->tinfo == VT_r_zscalar || 
              v->tinfo == VT_p_cscalar || v->tinfo == VT_p_zscalar)
-        fprintf(fp, 
+        fprintf(fp,
+		"#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                "    plhs[%d] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
+                "    *mxGetComplexDoubles(plhs[%d]) = %s;\n"
+		"#else\n"
                 "    plhs[%d] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
                 "    *mxGetPr(plhs[%d]) = real_%s(%s);\n"
-                "    *mxGetPi(plhs[%d]) = imag_%s(%s);\n",
+                "    *mxGetPi(plhs[%d]) = imag_%s(%s);\n"
+		"#endif\n",
+                v->output_label, 
+                v->output_label, vname(v, namebuf),
                 v->output_label, 
                 v->output_label, v->basetype, vname(v, namebuf),
                 v->output_label, v->basetype, vname(v, namebuf));
@@ -1271,6 +1292,7 @@ void print_mex_else_cases(FILE* fp, Func* f)
                 fcall->id, fcall->id);
 
     int maxid = max_routine_id(f);
+
     fprintf(fp, 
             "    else if (strcmp(id, \"*profile on*\") == 0) {\n"
             "        if (!mexprofrecord_) {\n"

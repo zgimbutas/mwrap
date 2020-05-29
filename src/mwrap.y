@@ -23,7 +23,7 @@ using std::string;
 bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
 bool  mw_use_c99_complex = false; // Use C99 complex types?
-bool  mw_promote_int = false;     // Convert integer types to mwSize?
+int   mw_promote_int = 0;     // Convert integer types to mwSize?
 int   listing_flag = 0;           // Output filenames from @ commands?
 int   mbatching_flag = 0;         // Output on @ commands?
 int   linenum = 0;                // Lexer line number
@@ -245,7 +245,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 0.33.4 - MEX file generator for MATLAB and Octave\n"
+"mwrap 0.33.5 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"
@@ -257,7 +257,7 @@ const char* help_string =
 "  -mb            -- generate .m files specified with @ redirections\n"
 "  -list          -- list files specified with @ redirections\n"
 "  -catch         -- generate C++ exception handling code\n"
-"  -im            -- convert int, long, uint, and ulong types to mwSize\n"
+"  -i8            -- convert int, long, uint, ulong to ptrdiff_t, size_t\n"
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
 "\n";
@@ -285,8 +285,8 @@ int main(int argc, char** argv)
                 listing_flag = 1;
             if (strcmp(argv[j], "-catch") == 0)
                 mw_generate_catch = true;
-            if (strcmp(argv[j], "-im") == 0)
-                mw_promote_int = true;
+            if (strcmp(argv[j], "-i8") == 0)
+                mw_promote_int = 2;
             if (strcmp(argv[j], "-c99complex") == 0) 
                 mw_use_c99_complex = true;
             if (strcmp(argv[j], "-cppcomplex") == 0) 
@@ -306,7 +306,7 @@ int main(int argc, char** argv)
             else if (strcmp(argv[j], "-mb") == 0 ||
                      strcmp(argv[j], "-list") == 0 ||
                      strcmp(argv[j], "-catch") == 0 ||
-                     strcmp(argv[j], "-im") == 0 ||
+		     strcmp(argv[j], "-i8") == 0 ||
                      strcmp(argv[j], "-c99complex") == 0 ||
                      strcmp(argv[j], "-cppcomplex") == 0);
             else {

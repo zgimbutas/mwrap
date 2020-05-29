@@ -54,7 +54,7 @@ void print_input_args(FILE* fp, Var* v)
     if (!v)
         return;
     if (v->tinfo == VT_const)
-        fprintf(fp, ", 0", v->name);
+        fprintf(fp, ", 0");
     else if (v->iospec == 'i' || v->iospec == 'b')
         fprintf(fp, ", %s", v->name);
     print_input_args(fp, v->next);
