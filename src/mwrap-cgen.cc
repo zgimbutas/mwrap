@@ -676,12 +676,15 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 {
     fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n",
             v->input_label, v->input_label);
-    /*
     if (strcmp(v->basetype, "double") == 0 && v->iospec == 'i')
-        fprintf(fp, "        in%d_ = mxGetPr(prhs[%d]);\n",
-                v->input_label, v->input_label);
+        fprintf(fp,
+                "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                "        in%d_ = mxGetDoubles(prhs[%d]);\n"
+                "#else\n"
+                "        in%d_ = mxGetPr(prhs[%d]);\n"
+                "#endif\n",
+                v->input_label, v->input_label, v->input_label, v->input_label);
     else
-    */
         fprintf(fp, 
                 "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n"
                 "        if (mw_err_txt_)\n"
