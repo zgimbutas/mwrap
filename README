@@ -44,3 +44,9 @@ mwrap-0.33.5
 
     Add support for Matlab R2018a complex interleaved API
 
+---
+
+mwrap-0.33.6
+
+    Fix array allocation/copying bug
+
