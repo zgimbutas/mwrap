@@ -50,3 +50,9 @@ mwrap-0.33.6
 
     Fix array allocation/copying bug
 
+---
+
+mwrap-0.33.7
+
+    Improved compiler compatibility
+
