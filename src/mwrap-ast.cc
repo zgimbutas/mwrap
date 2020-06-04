@@ -83,7 +83,16 @@ char *promote_int(char* name)
   if( mw_promote_int == 3 )
     {      
       if( strcmp(name,"int") == 0 ) return strdup("long");
+      if( strcmp(name,"long") == 0 ) return strdup("long");
       if( strcmp(name,"uint") == 0 ) return strdup("ulong");
+      if( strcmp(name,"ulong") == 0 ) return strdup("ulong");
+    }
+  if( mw_promote_int == 4 )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("longlong");
+      if( strcmp(name,"long") == 0 ) return strdup("longlong");
+      if( strcmp(name,"uint") == 0 ) return strdup("ulonglong");
+      if( strcmp(name,"ulong") == 0 ) return strdup("ulonglong");
     }
   return name;
 }
