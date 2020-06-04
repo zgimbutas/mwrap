@@ -245,7 +245,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 0.33.7 - MEX file generator for MATLAB and Octave\n"
+"mwrap 0.33.8 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"
@@ -285,6 +285,8 @@ int main(int argc, char** argv)
                 listing_flag = 1;
             if (strcmp(argv[j], "-catch") == 0)
                 mw_generate_catch = true;
+	    if (strcmp(argv[j], "-promote") == 0 && j+1 < argc)
+                mw_promote_int = atoi(argv[j+1]);
             if (strcmp(argv[j], "-i8") == 0)
                 mw_promote_int = 2;
             if (strcmp(argv[j], "-c99complex") == 0) 
@@ -301,7 +303,8 @@ int main(int argc, char** argv)
         for (j = 1; j < argc; ++j) {
             if (strcmp(argv[j], "-m") == 0 ||
                 strcmp(argv[j], "-c") == 0 ||
-                strcmp(argv[j], "-mex") == 0)
+                strcmp(argv[j], "-mex") == 0 ||
+	        strcmp(argv[j], "-promote") == 0)
                 ++j;
             else if (strcmp(argv[j], "-mb") == 0 ||
                      strcmp(argv[j], "-list") == 0 ||

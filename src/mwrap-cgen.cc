@@ -145,9 +145,13 @@ void mex_c99_complex(FILE* fp)
 
 void mex_define_copiers(FILE* fp, const char* name)
 {
+  if( (strcmp(name, "int32_t") == 0 ) || (strcmp(name, "int64_t") == 0 ) || (strcmp(name, "uint32_t") == 0 ) || (strcmp(name, "uint64_t") == 0 ) || (strcmp(name, "float32_t") == 0 ) || (strcmp(name, "float64_t") == 0 ) )
+    fprintf(fp, "#ifdef %s\n", name);
     fprintf(fp, "mxWrapGetArrayDef(mxWrapGetArray_%s, %s)\n", name, name);
     fprintf(fp, "mxWrapCopyDef    (mxWrapCopy_%s,     %s)\n", name, name);
     fprintf(fp, "mxWrapReturnDef  (mxWrapReturn_%s,   %s)\n", name, name);
+  if( (strcmp(name, "int32_t") == 0 ) || (strcmp(name, "int64_t") == 0 ) || (strcmp(name, "uint32_t") == 0 ) || (strcmp(name, "uint64_t") == 0 ) || (strcmp(name, "float32_t") == 0 ) || (strcmp(name, "float64_t") == 0 ) )
+    fprintf(fp, "#endif\n");
 }
 
 

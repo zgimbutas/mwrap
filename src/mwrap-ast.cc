@@ -80,6 +80,11 @@ char *promote_int(char* name)
       if( strcmp(name,"uint") == 0 ) return strdup("size_t");
       if( strcmp(name,"ulong") == 0 ) return strdup("size_t");
     }
+  if( mw_promote_int == 3 )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("long");
+      if( strcmp(name,"uint") == 0 ) return strdup("ulong");
+    }
   return name;
 }
 
