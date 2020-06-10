@@ -40,7 +40,8 @@ Date:   Sat Sep 29 17:04:20 2018 -0600
     
 ---
 
-mwrap-0.33.8
+mwrap-0.33.10
 
     Add support for Matlab R2018a complex interleaved API
+    Add support for C99 int32_t, int64_t, uint32_t, uint64_t 
 

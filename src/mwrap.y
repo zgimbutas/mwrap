@@ -24,6 +24,10 @@ bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
 bool  mw_use_c99_complex = false; // Use C99 complex types?
 int   mw_promote_int = 0;     // Convert integer types to mwSize?
+int   mw_use_int32_t = 0;     // Use C99 int32_t?
+int   mw_use_int64_t = 0;     // Use C99 int64_t?
+int   mw_use_uint32_t = 0;     // Use C99 uint32_t?
+int   mw_use_uint64_t = 0;     // Use C99 uint64_t?
 int   listing_flag = 0;           // Output filenames from @ commands?
 int   mbatching_flag = 0;         // Output on @ commands?
 int   linenum = 0;                // Lexer line number
@@ -245,7 +249,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 0.33.9 - MEX file generator for MATLAB and Octave\n"
+"mwrap 0.33.10 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"

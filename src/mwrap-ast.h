@@ -138,5 +138,10 @@ extern bool mw_use_c99_complex;
 extern bool mw_use_cpp_complex;
 extern int mw_promote_int;
 
+extern int mw_use_int32_t;
+extern int mw_use_int64_t;
+extern int mw_use_uint32_t;
+extern int mw_use_uint64_t;
+
 #endif /* MWRAP_AST_H */
 
