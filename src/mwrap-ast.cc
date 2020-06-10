@@ -55,7 +55,6 @@ void init_scalar_types()
         "longlong", "long", "int", "short", "char", 
         "ulonglong", "ulong", "uint", "ushort", "uchar",
 	"int32_t", "int64_t", "uint32_t", "uint64_t",
-	"float32_t", "float64_t",
         "bool", "size_t", "ptrdiff_t", 
         "mwSize", "mwIndex", "mwSignedIndex", NULL};
 
