@@ -261,7 +261,7 @@ const char* help_string =
 "  -mb            -- generate .m files specified with @ redirections\n"
 "  -list          -- list files specified with @ redirections\n"
 "  -catch         -- generate C++ exception handling code\n"
-"  -i8            -- convert int, long, uint, ulong to ptrdiff_t, size_t\n"
+"  -i8            -- convert int, long, uint, ulong to int64_t, uint64_t\n"
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
 "\n";
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
 	    if (strcmp(argv[j], "-promote") == 0 && j+1 < argc)
                 mw_promote_int = atoi(argv[j+1]);
             if (strcmp(argv[j], "-i8") == 0)
-                mw_promote_int = 2;
+                mw_promote_int = 8;
             if (strcmp(argv[j], "-c99complex") == 0) 
                 mw_use_c99_complex = true;
             if (strcmp(argv[j], "-cppcomplex") == 0) 
