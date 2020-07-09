@@ -127,7 +127,11 @@ int typecheck(Func* func, int line);
 
 void print(FILE* fp, Func* func);
 void print_matlab_call(FILE* fp, Func* func, const char* mexfunc);
+void print_mex_init(FILE* fp);
 void print_mex_file(FILE* fp, Func* f);
+
+void mex_c99_complex(FILE* fp);
+void mex_cpp_complex(FILE* fp);
 
 void destroy(Func* func);
 void destroy(InheritsDecl* ilist);
@@ -142,6 +146,8 @@ extern int mw_use_int32_t;
 extern int mw_use_int64_t;
 extern int mw_use_uint32_t;
 extern int mw_use_uint64_t;
+extern int mw_use_longlong;
+extern int mw_use_ulonglong;
 
 #endif /* MWRAP_AST_H */
 

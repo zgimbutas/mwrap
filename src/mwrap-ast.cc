@@ -55,8 +55,7 @@ void init_scalar_types()
         "longlong", "long", "int", "short", "char", 
         "ulonglong", "ulong", "uint", "ushort", "uchar",
 	"int32_t", "int64_t", "uint32_t", "uint64_t",
-        "bool", "size_t", "ptrdiff_t", 
-        "mwSize", "mwIndex", "mwSignedIndex", NULL};
+        "bool", "size_t", "ptrdiff_t", NULL};
 
     for (const char** s = scalar_types; *s; ++s)
         add_scalar_type(*s);
@@ -70,15 +69,10 @@ char *promote_int(char* name)
   if( strcmp(name,"int64_t") == 0 ) mw_use_int64_t = 1;
   if( strcmp(name,"uint32_t") == 0 ) mw_use_uint32_t = 1;
   if( strcmp(name,"uint64_t") == 0 ) mw_use_uint64_t = 1;
+  if( strcmp(name,"longlong") == 0 ) mw_use_longlong = 1;
+  if( strcmp(name,"ulonglong") == 0 ) mw_use_ulonglong = 1;
 
   /* Promote integers */
-  if( mw_promote_int == 1 )
-    {      
-      if( strcmp(name,"int") == 0 ) return strdup("mwSignedIndex");
-      if( strcmp(name,"long") == 0 ) return strdup("mwSignedIndex");
-      if( strcmp(name,"uint") == 0 ) return strdup("mwIndex");
-      if( strcmp(name,"ulong") == 0 ) return strdup("mwIndex");
-    }
   if( mw_promote_int == 2 )
     {      
       if( strcmp(name,"int") == 0 ) return strdup("ptrdiff_t");

@@ -2,7 +2,7 @@ include ../make.inc
 
 all: test_transfers test_cpp_complex $(TESTC99COMPLEX) test_syntax \
 	test_typecheck test_catch test_fortran1 test_fortran2 \
-	test_redirect test_include
+	test_redirect test_include test_single_cpp
 
 test_transfers: 
 	../mwrap -mex test_transfersmex \
@@ -62,6 +62,18 @@ test_include:
 		-m test_include.m test_include.mw
 	$(MEX) test_includemex.cc
 
+test_single_cpp: 
+	../mwrap -cppcomplex -mex test_single \
+		-c test_single.cc \
+		-mb test_single.mw
+	$(MEX) test_single.cc
+
+test_single_c99: 
+	../mwrap -c99complex -mex test_single \
+		-c test_single.c \
+		-mb test_single.mw
+	$(MEX) test_single.c
+
 clean:
 	rm -f *~ *.mex* *.o* test_typecheck.log
 	rm -f test_fortran1.m test_fortran2.m test_transfers.m test_catch.m
@@ -69,3 +81,6 @@ clean:
 	rm -f test_transfersmex.cc test_catchmex.cc test_fortranmex.cc
 	rm -f test_cpp_complexmex.cc test_c99_complexmex.c 
 	rm -f test_redirect.m test_redirect1.m
+	rm -f test_single.c test_single.cc
+	rm -f add.m addf.m addz.m addc.m 
+	rm -f arradd.m arraddf.m arraddz.m arraddc.m 

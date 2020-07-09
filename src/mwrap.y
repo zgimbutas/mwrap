@@ -28,6 +28,8 @@ int   mw_use_int32_t = 0;     // Use C99 int32_t?
 int   mw_use_int64_t = 0;     // Use C99 int64_t?
 int   mw_use_uint32_t = 0;     // Use C99 uint32_t?
 int   mw_use_uint64_t = 0;     // Use C99 uint64_t?
+int   mw_use_longlong = 0;     // Use long long int?
+int   mw_use_ulonglong = 0;     // Use unsigned long long int?
 int   listing_flag = 0;           // Output filenames from @ commands?
 int   mbatching_flag = 0;         // Output on @ commands?
 int   linenum = 0;                // Lexer line number
@@ -249,7 +251,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 0.33.10 - MEX file generator for MATLAB and Octave\n"
+"mwrap 0.33.11 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"
@@ -322,6 +324,8 @@ int main(int argc, char** argv)
                 yyin = fopen(argv[j], "r");
                 if (yyin) {
                     current_ifname = argv[j];
+		    if (outcfp)
+                        print_mex_init(outcfp);
                     err_flag += yyparse();
                     fclose(yyin);
                 } else {

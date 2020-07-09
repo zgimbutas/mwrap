@@ -151,15 +151,24 @@ void mex_define_copiers(FILE* fp, const char* name)
   if( (strcmp(name, "uint32_t") == 0 ) && ( mw_use_uint32_t == 0 ) ) return;
   if( (strcmp(name, "uint64_t") == 0 ) && ( mw_use_uint64_t == 0 ) ) return;
 
+  if( (strcmp(name, "longlong") == 0 ) && ( mw_use_longlong == 0 ) ) return;
+  if( (strcmp(name, "ulonglong") == 0 ) && ( mw_use_ulonglong == 0 ) ) return;
+
   /* Define copiers */
   fprintf(fp, "mxWrapGetArrayDef(mxWrapGetArray_%s, %s)\n", name, name);
   fprintf(fp, "mxWrapCopyDef    (mxWrapCopy_%s,     %s)\n", name, name);
   fprintf(fp, "mxWrapReturnDef  (mxWrapReturn_%s,   %s)\n", name, name);
+
+  /* Single precision */
+  fprintf(fp, "mxWrapGetArrayDef_single(mxWrapGetArray_single_%s, %s)\n", name, name);
+  fprintf(fp, "mxWrapCopyDef_single    (mxWrapCopy_single_%s,     %s)\n", name, name);
+  fprintf(fp, "mxWrapReturnDef_single  (mxWrapReturn_single_%s,   %s)\n", name, name);
 }
 
 
 void mex_define_zcopiers(FILE* fp, const char* name, const char* ztype)
 {
+    /* Define complex copiers */
     fprintf(fp, 
             "mxWrapGetScalarZDef(mxWrapGetScalar_%s, %s,\n"
             "                    %s, setz_%s)\n", 
@@ -176,11 +185,30 @@ void mex_define_zcopiers(FILE* fp, const char* name, const char* ztype)
             "mxWrapReturnZDef   (mxWrapReturn_%s, %s,\n"
             "                    real_%s, imag_%s)\n", 
             name, name, name, name);
+
+    /* Single precision */
+    fprintf(fp, 
+            "mxWrapGetScalarZDef_single(mxWrapGetScalar_single_%s, %s,\n"
+            "                    %s, setz_%s)\n", 
+            name, name, ztype, name);
+    fprintf(fp, 
+            "mxWrapGetArrayZDef_single (mxWrapGetArray_single_%s, %s,\n"
+            "                    %s, setz_%s)\n", 
+            name, name, ztype, name);
+    fprintf(fp, 
+            "mxWrapCopyZDef_single     (mxWrapCopy_single_%s, %s,\n"
+            "                    real_%s, imag_%s)\n", 
+            name, name, name, name);
+    fprintf(fp, 
+            "mxWrapReturnZDef_single   (mxWrapReturn_single_%s, %s,\n"
+            "                    real_%s, imag_%s)\n", 
+            name, name, name, name);
 }
 
 
 void mex_define_copiers(FILE* fp)
 {
+    fprintf(fp, "\n\n\n");
     fprintf(fp, "/* Array copier definitions */\n");
     for( set<string>::iterator iter = scalar_decls.begin();
          iter != scalar_decls.end(); 
@@ -683,20 +711,66 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 {
     fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n",
             v->input_label, v->input_label);
-    if (strcmp(v->basetype, "double") == 0 && v->iospec == 'i')
+    if (strcmp(v->basetype, "fcomplex") == 0)
+      fprintf(fp, 
+	      "        if( mxGetClassID(prhs[%d]) != mxSINGLE_CLASS )\n"
+	      "            mw_err_txt_ = \"Invalid array argument, mxSINGLE_CLASS expected\";\n"
+	      "        if (mw_err_txt_) goto mw_err_label;\n"
+	      "        in%d_ = mxWrapGetArray_single_%s(prhs[%d], &mw_err_txt_);\n"
+	      "        if (mw_err_txt_)\n"
+	      "            goto mw_err_label;\n",
+	      v->input_label, v->input_label, v->basetype, v->input_label);
+    else if (strcmp(v->basetype, "dcomplex") == 0)
+      fprintf(fp, 
+	      "        if( mxGetClassID(prhs[%d]) != mxDOUBLE_CLASS )\n"
+	      "            mw_err_txt_ = \"Invalid array argument, mxDOUBLE_CLASS expected\";\n"
+	      "        if (mw_err_txt_) goto mw_err_label;\n"
+	      "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n"
+	      "        if (mw_err_txt_)\n"
+	      "            goto mw_err_label;\n",
+	      v->input_label, v->input_label, v->basetype, v->input_label);
+    else if (strcmp(v->basetype, "float") == 0)
+      if (v->iospec == 'i')
         fprintf(fp,
+                "        if( mxGetClassID(prhs[%d]) != mxSINGLE_CLASS )\n"
+		"            mw_err_txt_ = \"Invalid array argument, mxSINGLE_CLASS expected\";\n"
+		"        if (mw_err_txt_) goto mw_err_label;\n"
                 "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                "        in%d_ = mxGetDoubles(prhs[%d]);\n"
+                "        in%d_ = mxGetSingles(prhs[%d]);\n"
                 "#else\n"
-                "        in%d_ = mxGetPr(prhs[%d]);\n"
+                "        in%d_ = (float*) mxGetData(prhs[%d]);\n"
                 "#endif\n",
-                v->input_label, v->input_label, v->input_label, v->input_label);
-    else
+                v->input_label, v->input_label, v->input_label, v->input_label, v->input_label);
+      else
         fprintf(fp, 
-                "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n"
+                "        in%d_ = mxWrapGetArray_single_%s(prhs[%d], &mw_err_txt_);\n"
                 "        if (mw_err_txt_)\n"
                 "            goto mw_err_label;\n",
                 v->input_label, v->basetype, v->input_label);
+    else if (strcmp(v->basetype, "double") == 0)
+      if (v->iospec == 'i')
+	fprintf(fp,
+		"        if( mxGetClassID(prhs[%d]) != mxDOUBLE_CLASS )\n"
+		"            mw_err_txt_ = \"Invalid array argument, mxDOUBLE_CLASS expected\";\n"
+		"        if (mw_err_txt_) goto mw_err_label;\n"
+		"#if MX_HAS_INTERLEAVED_COMPLEX\n"
+		"        in%d_ = mxGetDoubles(prhs[%d]);\n"
+		"#else\n"
+		"        in%d_ = mxGetPr(prhs[%d]);\n"
+		"#endif\n",
+		v->input_label, v->input_label, v->input_label, v->input_label, v->input_label);
+      else
+	fprintf(fp, 
+		"        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n"
+		"        if (mw_err_txt_)\n"
+		"            goto mw_err_label;\n",
+		v->input_label, v->basetype, v->input_label);
+    else
+      fprintf(fp, 
+	      "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n"
+	      "        if (mw_err_txt_)\n"
+	      "            goto mw_err_label;\n",
+	      v->input_label, v->basetype, v->input_label);
     fprintf(fp, 
             "    } else\n"
             "        in%d_ = NULL;\n", 
@@ -744,16 +818,53 @@ void mex_unpack_inputs(FILE* fp, Var* v)
     else if (v->tinfo == VT_scalar ||
              v->tinfo == VT_r_scalar || 
              v->tinfo == VT_p_scalar)
+      {
+	if ( strcmp(v->basetype,"float") == 0 ) 
+        fprintf(fp,
+                "    if( mxGetClassID(prhs[%d]) != mxSINGLE_CLASS )\n"
+		"        mw_err_txt_ = \"Invalid scalar argument, mxSINGLE_CLASS expected\";\n"
+		"    if (mw_err_txt_) goto mw_err_label;\n"
+                "    in%d_ = (%s) mxWrapGetScalar_single(prhs[%d], &mw_err_txt_);\n"
+                "    if (mw_err_txt_)\n"
+                "        goto mw_err_label;\n",
+                v->input_label, v->input_label, v->basetype, v->input_label);
+	else
         fprintf(fp, 
+                "    if( mxGetClassID(prhs[%d]) != mxDOUBLE_CLASS )\n"
+		"        mw_err_txt_ = \"Invalid scalar argument, mxDOUBLE_CLASS expected\";\n"
+		"    if (mw_err_txt_) goto mw_err_label;\n"
                 "    in%d_ = (%s) mxWrapGetScalar(prhs[%d], &mw_err_txt_);\n"
                 "    if (mw_err_txt_)\n"
                 "        goto mw_err_label;\n",
-                v->input_label, v->basetype, v->input_label);
+                v->input_label, v->input_label, v->basetype, v->input_label);
+      }
     else if (v->tinfo == VT_cscalar   || v->tinfo == VT_zscalar   ||
              v->tinfo == VT_r_cscalar || v->tinfo == VT_r_zscalar ||
              v->tinfo == VT_p_cscalar || v->tinfo == VT_p_zscalar)
-        fprintf(fp, "    mxWrapGetScalar_%s(&in%d_, prhs[%d]);\n",
-                v->basetype, v->input_label, v->input_label);
+      {
+	if ( strcmp(v->basetype,"fcomplex") == 0 ) 
+	  {
+	    fprintf(fp,
+		    "    if( mxGetClassID(prhs[%d]) != mxSINGLE_CLASS )\n"
+		    "        mw_err_txt_ = \"Invalid scalar argument, mxSINGLE_CLASS expected\";\n"
+		    "    if (mw_err_txt_) goto mw_err_label;\n",
+		    v->input_label);
+	    fprintf(fp,
+		    "    mxWrapGetScalar_single_%s(&in%d_, prhs[%d]);\n",
+		    v->basetype, v->input_label, v->input_label);
+	  }
+	else
+	  {
+	    fprintf(fp,
+		    "    if( mxGetClassID(prhs[%d]) != mxDOUBLE_CLASS )\n"
+		    "        mw_err_txt_ = \"Invalid scalar argument, mxDOUBLE_CLASS expected\";\n"
+		    "    if (mw_err_txt_) goto mw_err_label;\n",
+		    v->input_label);
+	    fprintf(fp,
+		    "    mxWrapGetScalar_%s(&in%d_, prhs[%d]);\n",
+		    v->basetype, v->input_label, v->input_label);
+	  }
+      }
     else if (v->tinfo == VT_string)
         mex_unpack_input_string(fp, v);
     else if (v->tinfo == VT_mx)
@@ -1048,11 +1159,22 @@ void mex_marshal_array(FILE* fp, Var* v)
     if (!e) {
 
         // No dimension info -- must be an inout array
+        if (strcmp(v->basetype, "float") == 0 || strcmp(v->basetype, "fcomplex") == 0)
+	  {
+        fprintf(fp, "%splhs[%d] = mxCreateNumericMatrix("
+                "mxGetM(prhs[%d]), mxGetN(prhs[%d]), mxSINGLE_CLASS, %s);\n", ws, 
+                v->output_label, v->input_label, v->input_label, mtype);
+        fprintf(fp, "%smxWrapCopy_single_%s(plhs[%d], in%d_, ", ws, 
+                v->basetype, v->output_label, v->input_label);
+	  }
+	else
+	  {
         fprintf(fp, "%splhs[%d] = mxCreateDoubleMatrix("
                 "mxGetM(prhs[%d]), mxGetN(prhs[%d]), %s);\n", ws, 
                 v->output_label, v->input_label, v->input_label, mtype);
         fprintf(fp, "%smxWrapCopy_%s(plhs[%d], in%d_, ", ws, 
                 v->basetype, v->output_label, v->input_label);
+	  }
         fprintf(fp, "mxGetM(prhs[%d])*mxGetN(prhs[%d])",
                 v->input_label, v->input_label);
         fprintf(fp, ");\n");
@@ -1060,10 +1182,20 @@ void mex_marshal_array(FILE* fp, Var* v)
     } else if (!(e->next)) {
 
         // Only size given
+        if (strcmp(v->basetype, "float") == 0 || strcmp(v->basetype, "fcomplex") == 0)
+	  {
+        fprintf(fp, "%splhs[%d] = mxCreateNumericMatrix(dim%d_, 1, mxSINGLE_CLASS, %s);\n", ws,
+                v->output_label, e->input_label, mtype);
+        fprintf(fp, "%smxWrapCopy_single_%s(plhs[%d], %s, ", ws, 
+                v->basetype, v->output_label, vname(v, namebuf));
+	  }
+	else
+	  {
         fprintf(fp, "%splhs[%d] = mxCreateDoubleMatrix(dim%d_, 1, %s);\n", ws,
                 v->output_label, e->input_label, mtype);
         fprintf(fp, "%smxWrapCopy_%s(plhs[%d], %s, ", ws, 
                 v->basetype, v->output_label, vname(v, namebuf));
+	  }
         fprintf(fp, "dim%d_",
                 e->input_label);
         fprintf(fp, ");\n");
@@ -1071,11 +1203,22 @@ void mex_marshal_array(FILE* fp, Var* v)
     } else if (!(e->next->next)) {
 
         // Two dimensions given
+        if (strcmp(v->basetype, "float") == 0 || strcmp(v->basetype, "fcomplex") == 0)
+	  {
+        fprintf(fp, "%splhs[%d] = mxCreateNumericMatrix("
+                "dim%d_, dim%d_, mxSINGLE_CLASS, %s);\n", ws, 
+                v->output_label, e->input_label, e->next->input_label, mtype);
+        fprintf(fp, "%smxWrapCopy_single_%s(plhs[%d], %s, ", ws, 
+                v->basetype, v->output_label, vname(v, namebuf));
+	  }
+	else
+	  {
         fprintf(fp, "%splhs[%d] = mxCreateDoubleMatrix("
                 "dim%d_, dim%d_, %s);\n", ws, 
                 v->output_label, e->input_label, e->next->input_label, mtype);
         fprintf(fp, "%smxWrapCopy_%s(plhs[%d], %s, ", ws, 
                 v->basetype, v->output_label, vname(v, namebuf));
+	  }
         fprintf(fp, "dim%d_*dim%d_",
                 e->input_label, e->next->input_label);
         fprintf(fp, ");\n");
@@ -1083,12 +1226,24 @@ void mex_marshal_array(FILE* fp, Var* v)
     } else {
 
         // Three or more dimensions given -- punt and make it 1D
+        if (strcmp(v->basetype, "float") == 0 || strcmp(v->basetype, "fcomplex") == 0)
+	  {
+        fprintf(fp, "%splhs[%d] = mxCreateNumericMatrix(", ws, 
+                v->output_label);
+        mex_alloc_size(fp, e);
+        fprintf(fp, ", 1, mxSINGLE_CLASS, %s);\n", mtype);
+        fprintf(fp, "%smxWrapCopy_single_%s(plhs[%d], %s, ", ws, 
+                v->basetype, v->output_label, vname(v, namebuf));
+	  }
+	else
+	  {
         fprintf(fp, "%splhs[%d] = mxCreateDoubleMatrix(", ws, 
                 v->output_label);
         mex_alloc_size(fp, e);
         fprintf(fp, ", 1, %s);\n", mtype);
         fprintf(fp, "%smxWrapCopy_%s(plhs[%d], %s, ", ws, 
                 v->basetype, v->output_label, vname(v, namebuf));
+	  }
         mex_alloc_size(fp, e);
         fprintf(fp, ");\n");
 
@@ -1168,6 +1323,7 @@ void mex_marshal_results(FILE* fp, Func* f)
 }
 
 
+
 /* -- Deallocate temporary data -- */
 /*
  * Free scratch arrays allocated to hold input copies and output
@@ -1184,7 +1340,7 @@ void mex_dealloc(FILE* fp, Var* v, bool return_flag)
         if (v->iospec == 'o')
             fprintf(fp, "    if (out%d_) mxFree(out%d_);\n", 
                     v->output_label, v->output_label);
-        else if (v->iospec == 'b' || strcmp(v->basetype, "double") != 0)
+        else if (v->iospec == 'b' || !(strcmp(v->basetype, "double") == 0 || strcmp(v->basetype, "float") == 0) )
             fprintf(fp, "    if (in%d_)  mxFree(in%d_);\n", 
                     v->input_label, v->input_label);
     } else if (is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
@@ -1345,6 +1501,7 @@ const char* mwrap_banner =
     "/* Automatically generated by mwrap                    */\n"
     "/* --------------------------------------------------- */\n\n";
 
+
 const char* mexBase =
     "/* ----\n"
     " */\n"
@@ -1359,8 +1516,10 @@ const char* mexBase =
     "    if (mxGetString(prhs[0], id, sizeof(id)) != 0)\n"
     "        mexErrMsgTxt(\"Identifier should be a string\");\n";
 
-void print_mex_file(FILE* fp, Func* f)
+
+void print_mex_init(FILE* fp)
 {
+
     fprintf(fp, "%s", mwrap_banner);
     fprintf(fp, "%s", mex_header);
 
@@ -1368,6 +1527,11 @@ void print_mex_file(FILE* fp, Func* f)
         mex_c99_complex(fp);
     else if (mw_use_cpp_complex)
         mex_cpp_complex(fp);
+}
+
+
+void print_mex_file(FILE* fp, Func* f)
+{
 
     mex_define_copiers(fp);
     mex_casting_getters(fp);

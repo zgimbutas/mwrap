@@ -119,10 +119,10 @@ $ void takes_uchar(unsigned char& x) {}
 $ void takes_bool(bool& x) {}
 $ void takes_size_t(size_t& x) {}
 
-x = 0;
+x = 0; xs = single(x);
 # typedef numeric byte;
 # takes_double(double& x);
-# takes_float(float& x);
+# takes_float(float& xs);
 # takes_long(long& x);
 # takes_int(int& x);
 # takes_char(char& x);
