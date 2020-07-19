@@ -42,6 +42,8 @@ typedef std::complex<double> cmplx;
 #define imag_cmplx(z) (z).imag()
 #define setz_cmplx(zp, r, i)  *zp = cmplx(r,i)
 
+typedef unsigned char uchar;
+
 $]
 % ================================================================
 function test_mult_inherit

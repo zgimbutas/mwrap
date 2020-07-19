@@ -72,6 +72,11 @@ char *promote_int(char* name)
   if( strcmp(name,"longlong") == 0 ) mw_use_longlong = 1;
   if( strcmp(name,"ulonglong") == 0 ) mw_use_ulonglong = 1;
 
+  if( strcmp(name,"ulong") == 0 ) mw_use_ulong = 1;
+  if( strcmp(name,"uint") == 0 ) mw_use_uint = 1;
+  if( strcmp(name,"ushort") == 0 ) mw_use_ushort = 1;
+  if( strcmp(name,"uchar") == 0 ) mw_use_uchar = 1;
+
   /* Promote integers */
   if( mw_promote_int == 2 )
     {      

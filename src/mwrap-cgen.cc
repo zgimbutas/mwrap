@@ -154,6 +154,11 @@ void mex_define_copiers(FILE* fp, const char* name)
   if( (strcmp(name, "longlong") == 0 ) && ( mw_use_longlong == 0 ) ) return;
   if( (strcmp(name, "ulonglong") == 0 ) && ( mw_use_ulonglong == 0 ) ) return;
 
+  if( (strcmp(name, "ulong") == 0 ) && ( mw_use_ulong == 0 ) ) return;
+  if( (strcmp(name, "uint") == 0 ) && ( mw_use_uint == 0 ) ) return;
+  if( (strcmp(name, "ushort") == 0 ) && ( mw_use_ushort == 0 ) ) return;
+  if( (strcmp(name, "uchar") == 0 ) && ( mw_use_uchar == 0 ) ) return;
+
   /* Define copiers */
   fprintf(fp, "mxWrapGetArrayDef(mxWrapGetArray_%s, %s)\n", name, name);
   fprintf(fp, "mxWrapCopyDef    (mxWrapCopy_%s,     %s)\n", name, name);
@@ -1517,16 +1522,54 @@ const char* mexBase =
     "        mexErrMsgTxt(\"Identifier should be a string\");\n";
 
 
+const char* mwrap_compat_type_support = 
+    "/*\n"
+    " *   Compiler compatibility extensions\n"
+    " */\n"
+    "\n"
+    "typedef unsigned long ulong;\n"
+    "typedef unsigned int uint;\n"
+    "typedef unsigned short ushort;\n"
+    "typedef unsigned char uchar;\n"
+    "typedef long long longlong;\n"
+    "typedef unsigned long long ulonglong;\n";
+  //    "#ifndef ulong\n"
+  //    "#  define ulong unsigned long\n"
+  //    "#endif\n"
+  //    "#ifndef uint\n"
+  //    "#  define uint  unsigned int\n"
+  //    "#endif\n"
+  //    "#ifndef ushort\n"
+  //    "#  define ushort unsigned short\n"
+  //    "#endif\n"
+  //    "#ifndef uchar\n"
+  //    "#  define uchar unsigned char\n"
+  //    "#endif\n"
+  //    "\n"
+  //    "#ifndef longlong\n"
+  //    "#  define longlong long long\n"
+  //    "#endif\n"
+  //    "#ifndef ulonglong\n"
+  //    "#  define ulonglong unsigned long long\n"
+  //    "#endif\n";
+
+
 void print_mex_init(FILE* fp)
 {
 
     fprintf(fp, "%s", mwrap_banner);
     fprintf(fp, "%s", mex_header);
 
+    fprintf(fp, "\n");
     if (mw_use_c99_complex)
         mex_c99_complex(fp);
     else if (mw_use_cpp_complex)
         mex_cpp_complex(fp);
+
+    //    fprintf(fp, "\n");
+    //    fprintf(fp, "%s", mwrap_compat_type_support);
+    //    fprintf(fp, "\n");
+	
 }
 
 

@@ -149,5 +149,10 @@ extern int mw_use_uint64_t;
 extern int mw_use_longlong;
 extern int mw_use_ulonglong;
 
+extern int mw_use_ulong;
+extern int mw_use_uint;
+extern int mw_use_ushort;
+extern int mw_use_uchar;
+
 #endif /* MWRAP_AST_H */
 
