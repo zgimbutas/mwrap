@@ -43,6 +43,7 @@ typedef std::complex<double> cmplx;
 #define setz_cmplx(zp, r, i)  *zp = cmplx(r,i)
 
 typedef unsigned char uchar;
+typedef unsigned long ulong;
 
 $]
 % ================================================================
