@@ -1,11 +1,12 @@
-% try float (single prec) arrays in mwrap. Length-1 for now.
-% Barnett & Gimbutas 7/5/20-7/8/20
-%
-% mwrap -mex mwrapfloat -c mwrapfloat.cpp -mb mwrapfloat.mw -cppcomplex
-% mex mwrapfloat.cpp -largeArrayDims -output mwrapfloat
+% test double and single precision, scalars and arrays, in mwrap.
+% Barnett & Gimbutas 7/5/20-7/20/20.
 
-% then test in matlab with test_single_all.m
-% *** need pass-fail
+% make as in Makefile,
+% then pass-fail test in octave/matlab with:
+% test_single.m
+
+% the old non-pass-fail is here:
+% test_single_humanreadable.m
 
 
 % REAL======================================================

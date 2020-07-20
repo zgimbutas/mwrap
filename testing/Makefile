@@ -3,6 +3,8 @@ include ../make.inc
 all: test_transfers test_cpp_complex $(TESTC99COMPLEX) test_syntax \
 	test_typecheck test_catch test_fortran1 test_fortran2 \
 	test_redirect test_include test_single_cpp
+# run the tests...
+	octave test_all.m
 
 test_transfers: 
 	../mwrap -mex test_transfersmex \
@@ -24,6 +26,9 @@ test_c99_complex:
 		-m test_c99_complex.m test_c99_complex.mw
 	$(MEX) test_c99_complexmex.c
 
+# the following two are designed to create mwrap errors, and compared against
+# log files. For now, since they would break the make process, the minus signs
+# prevent them from being made.
 test_syntax:
 	- ../mwrap -cppcomplex test_syntax.mw 2> test_syntax.log
 	diff test_syntax.log test_syntax.ref
@@ -31,6 +36,7 @@ test_syntax:
 test_typecheck:
 	- ../mwrap -cppcomplex test_typecheck.mw 2> test_typecheck.log 
 	diff test_typecheck.log test_typecheck.ref
+
 
 test_catch:
 	../mwrap -mex test_catchmex -catch \
@@ -62,17 +68,18 @@ test_include:
 		-m test_include.m test_include.mw
 	$(MEX) test_includemex.cc
 
+# these last two are tested by test_single.m ...
 test_single_cpp: 
-	../mwrap -cppcomplex -mex test_single \
-		-c test_single.cc \
+	../mwrap -cppcomplex -mex test_singlemex \
+		-c test_singlemex.cc \
 		-mb test_single.mw
-	$(MEX) test_single.cc
+	$(MEX) test_singlemex.cc
 
 test_single_c99: 
-	../mwrap -c99complex -mex test_single \
-		-c test_single.c \
+	../mwrap -c99complex -mex test_singlemex \
+		-c test_singlemex.c \
 		-mb test_single.mw
-	$(MEX) test_single.c
+	$(MEX) test_singlemex.c
 
 clean:
 	rm -f *~ *.mex* *.o* test_typecheck.log
@@ -81,6 +88,6 @@ clean:
 	rm -f test_transfersmex.cc test_catchmex.cc test_fortranmex.cc
 	rm -f test_cpp_complexmex.cc test_c99_complexmex.c 
 	rm -f test_redirect.m test_redirect1.m
-	rm -f test_single.c test_single.cc
+	rm -f test_singlemex.c test_singlemex.cc
 	rm -f add.m addf.m addz.m addc.m 
 	rm -f arradd.m arraddf.m arraddz.m arraddc.m 

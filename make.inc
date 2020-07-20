@@ -5,7 +5,7 @@
 #  already in place.)
 
 # Uncomment this line for new-style classdef support
-# OOFLAG=-DR2008OO
+OOFLAG=-DR2008OO
 
 # Uncomment this line for C99 complex support
 TESTC99COMPLEX=test_c99_complex

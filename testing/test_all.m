@@ -6,3 +6,4 @@ test_fortran1;
 test_fortran2;
 test_redirect;
 test_include;
+test_single;
