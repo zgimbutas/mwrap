@@ -243,6 +243,7 @@ int yyerror(const char* s)
 {
     fprintf(stderr, "Parse error (%s:%d): %s\n", current_ifname.c_str(),
             linenum, s);
+    return 0;
 }
 
 char* mwrap_strdup(const char* s)
