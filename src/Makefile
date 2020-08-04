@@ -37,7 +37,7 @@ mwrap-support.h: mwrap-support.c stringify
 	./stringify mex_header < mwrap-support.c > mwrap-support.h
 
 stringify: stringify.c
-	gcc -o stringify stringify.c
+	$(CC) -o stringify stringify.c
 
 
 # === Clean-up targets ===

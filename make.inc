@@ -10,8 +10,8 @@ OOFLAG=-DR2008OO
 # Uncomment this line for C99 complex support
 TESTC99COMPLEX=test_c99_complex
 
-CC=    gcc
-CXX=   g++
+CC := $(if $(CC),$(CC),gcc)
+CXX := $(if $(CXX),$(CXX),g++)
 MEX=   mex $(OOFLAG)
 
 # Use the following for 64-bit MEX
