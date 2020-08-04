@@ -17,8 +17,8 @@
 
 \pagestyle{fancy}
 
-\headrulewidth 1.5pt
-\footrulewidth 1.5pt
+%%\headrulewidth 1.5pt
+%%\footrulewidth 1.5pt
 \chead{\mwrap}
 \lhead{}
 \rhead{}
@@ -26,7 +26,6 @@
 \begin{document}
 
 \maketitle
-
 
 \section{Introduction}
 
@@ -85,7 +84,7 @@ object-oriented facilities will not function with GNU Octave.
 The {\tt mwrap} command line has the following form:
 \begin{verbatim}
   mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] 
-        [-list] [-catch] [-c99complex] [-cppcomplex] 
+        [-list] [-catch] [-i8] [-c99complex] [-cppcomplex] 
         infile1 infile2 ...
 \end{verbatim}
 where
@@ -118,6 +117,11 @@ where
 
 \item {\tt -catch} tells \mwrap\ to surround library calls in try/catch
   blocks in order to intercept C++ exceptions.
+
+\item {\tt -i8} tells \mwrap\ to convert {\tt int}, {\tt long}, {\tt
+  uint}, {\tt ulong} types to {\tt int64\_t}, {\tt uint64\_t}. This is
+  convenient if {\tt -i8}, {\tt -fdefault-integer-8} or {\tt
+    -finteger-4-integer-8} flags are used by a Fortran compiler.
 
 \item {\tt -c99complex} tells \mwrap\ to use the C99 complex floating
   point types as the default {\tt dcomplex} and {\tt fcomplex} types.
@@ -235,9 +239,9 @@ variable.
 \begin{tabular}{l@{ := }l}
   statement  & returnvar {\tt = } func {\tt (} args {\tt );} \\
              & func {\tt (}  args {\tt );} \\
-             & {\tt typdef numeric} {\it type-id} {\tt ;} \\
-             & {\tt typdef dcomplex} {\it type-id} {\tt ;} \\
-             & {\tt typdef fcomplex} {\it type-id} {\tt ;} \\
+             & {\tt typedef numeric} {\it type-id} {\tt ;} \\
+             & {\tt typedef dcomplex} {\it type-id} {\tt ;} \\
+             & {\tt typedef fcomplex} {\it type-id} {\tt ;} \\
              & {\tt class} {\it child-id} {\tt :}
                {\it parent-id} {\tt ,} {\it parent-id} {\tt ,} $\ldots$
 \vspace{5mm} \\
@@ -277,15 +281,16 @@ as constant expressions:
 
 \subsection{Numeric types}
 
-{\it Scalars} are intrinsic numeric types in C/C++:
-{\tt double}, {\tt float}, {\tt long}, {\tt int}, {\tt char},
-{\tt ulong}, {\tt uint}, {\tt uchar}, {\tt bool}, and {\tt size\_t}.
+{\it Scalars} are intrinsic numeric types in C/C++: {\tt double}, {\tt
+  float}, {\tt long}, {\tt int}, {\tt char}, {\tt ulong}, {\tt uint},
+{\tt uchar}, {\tt bool}, {\tt int32\_t}, {\tt uint32\_t}, {\tt
+  int64\_t}, {\tt uint64\_t}, {\tt ptrdiff\_t} and {\tt size\_t}.
 These are the numeric types that \mwrap\ knows about by default, but
 if necessary, new numeric types can be declared using {\tt typedef}
-commands.  For example, if we wanted to use {\tt uint32\_t} as a
+commands.  For example, if we wanted to use {\tt float64\_t} as a
 numeric type, we would need the line
 \begin{verbatim}
-  # typedef numeric uint32_t;
+  # typedef numeric float64_t;
 \end{verbatim}
 Ordinary scalars cannot be used as output arguments.
 
@@ -500,6 +505,29 @@ write
 \begin{verbatim}
   # fprintf(const stderr, cstring s);
 \end{verbatim}
+
+
+\subsection{Constants}
+
+The {\it const} type in \mwrap\ refers to a C/C++ symbolic constant or
+global variable.  The name of the variable is output directly into the
+compiled code.  For example, to print a string to {\tt stderr}, we can
+write
+\begin{verbatim}
+  # fprintf(const stderr, cstring s);
+\end{verbatim}
+
+
+\subsection{{\tt mxSINGLE\_CLASS} and {\tt mxDOUBLE\_CLASS}}
+
+By default, {\tt mwrap 0.33} expected all input and output numeric
+MATLAB variables to be of {\tt mxDOUBLE\_CLASS}. The newest version of
+{\tt mwrap (0.33.12+)} allows {\tt mxSINGLE\_CLASS} for {\tt float}
+and {\tt fcomplex} types. An error {\tt 'Invalid array argument,
+  mxSINGLE/DOUBLE\_CLASS expected'} will be issued if a mismatched
+Matlab variable is detected during runtime. The user is expected to
+perform the required type conversions manually using {\tt single} or
+{\tt double} MATLAB commands.
 
 
 \section{Example}

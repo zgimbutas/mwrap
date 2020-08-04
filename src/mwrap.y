@@ -28,8 +28,6 @@ int   mw_use_int32_t = 0;     // Use C99 int32_t?
 int   mw_use_int64_t = 0;     // Use C99 int64_t?
 int   mw_use_uint32_t = 0;     // Use C99 uint32_t?
 int   mw_use_uint64_t = 0;     // Use C99 uint64_t?
-int   mw_use_longlong = 0;     // Use long long int?
-int   mw_use_ulonglong = 0;     // Use unsigned long long int?
 int   mw_use_ulong = 0;     // Use unsigned long?
 int   mw_use_uint = 0;     // Use unsigned int?
 int   mw_use_ushort = 0;     // Use unsigned short?
@@ -255,7 +253,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 0.33.12 - MEX file generator for MATLAB and Octave\n"
+"mwrap 1.0 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"

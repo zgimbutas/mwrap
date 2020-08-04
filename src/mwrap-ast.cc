@@ -52,8 +52,8 @@ void init_scalar_types()
 {
     const char* scalar_types[] = {
         "double", "float", 
-        "longlong", "long", "int", "short", "char", 
-        "ulonglong", "ulong", "uint", "ushort", "uchar",
+        "long", "int", "short", "char", 
+        "ulong", "uint", "ushort", "uchar",
 	"int32_t", "int64_t", "uint32_t", "uint64_t",
         "bool", "size_t", "ptrdiff_t", NULL};
 
@@ -69,8 +69,6 @@ char *promote_int(char* name)
   if( strcmp(name,"int64_t") == 0 ) mw_use_int64_t = 1;
   if( strcmp(name,"uint32_t") == 0 ) mw_use_uint32_t = 1;
   if( strcmp(name,"uint64_t") == 0 ) mw_use_uint64_t = 1;
-  if( strcmp(name,"longlong") == 0 ) mw_use_longlong = 1;
-  if( strcmp(name,"ulonglong") == 0 ) mw_use_ulonglong = 1;
 
   if( strcmp(name,"ulong") == 0 ) mw_use_ulong = 1;
   if( strcmp(name,"uint") == 0 ) mw_use_uint = 1;
@@ -90,24 +88,12 @@ char *promote_int(char* name)
       if( strcmp(name,"int") == 0 ) return strdup("long");
       if( strcmp(name,"uint") == 0 ) return strdup("ulong");
     }
-  if( mw_promote_int == 4 )
-    {      
-      if( strcmp(name,"long") == 0 ) return strdup("longlong");
-      if( strcmp(name,"ulong") == 0 ) return strdup("ulonglong");
-    }
   if( mw_promote_int == 5 )
     {      
       if( strcmp(name,"int") == 0 ) return strdup("long");
       if( strcmp(name,"long") == 0 ) return strdup("long");
       if( strcmp(name,"uint") == 0 ) return strdup("ulong");
       if( strcmp(name,"ulong") == 0 ) return strdup("ulong");
-    }
-  if( mw_promote_int == 6 )
-    {      
-      if( strcmp(name,"int") == 0 ) return strdup("longlong");
-      if( strcmp(name,"long") == 0 ) return strdup("longlong");
-      if( strcmp(name,"uint") == 0 ) return strdup("ulonglong");
-      if( strcmp(name,"ulong") == 0 ) return strdup("ulonglong");
     }
   if( mw_promote_int == 7 )
     {      

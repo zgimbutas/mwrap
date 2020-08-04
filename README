@@ -1,9 +1,5 @@
-mwrap-0.33
-
-commit 516e4e7fd2c134872f58a220e098c27c5ad55b77
-Author: David Bindel <bindel@cs.cornell.edu>
-Date: 2011-12-08
-(https://www.cs.cornell.edu/~bindel/sw/mwrap/)
+MWrap 1.0
+=========
 
 MWrap is an interface generation system in the spirit of SWIG or matwrap.  From
 a set of augmented MATLAB script files, MWrap will generate a MEX gateway to
@@ -20,41 +16,19 @@ how MWrap is used.
 
 ---
 
-mwrap-0.33.3
+Version 0.33
+Author: David Bindel <bindel@cs.cornell.edu>
 
-commit 0697bfe93b2d285c8f6dfb64f32241f593289dd9
-Author: Zydrunas Gimbutas <zydrunas.gimbutas@gmail.com>
-Date:   Fri Jul 25 15:55:22 2014 -0600
+    Initial revision, clone David's repository
+
+---
+
+Version 1.0
+Authors: Zydrunas Gimbutas, Alex Barnett, Libin Lu
 
     Add support for 64-bit Matlab and gcc-4.6
-
----
-
-mwrap-0.33.4
-
-commit f3e68ae14a2a8041698f8c4977205b8e72d59a62
-Author: Zydrunas Gimbutas <zydrunas.gimbutas@gmail.com>
-Date:   Sat Sep 29 17:04:20 2018 -0600
-
     Add support for gcc 7.3+
-    
----
-
-mwrap-0.33.10
-
     Add support for Matlab R2018a complex interleaved API
     Add support for C99 int32_t, int64_t, uint32_t, uint64_t 
-
----
-
-mwrap-0.33.11
-
     Allow single precision Matlab inputs and outputs
-
----
-
-mwrap-0.33.12
-
-    Include support for ulong, uint, ushort, uchar only if needed
-    
 
