@@ -31,7 +31,7 @@ test_c99_complex:
 # prevent them from being made.
 test_syntax:
 	- ../mwrap -cppcomplex test_syntax.mw 2> test_syntax.log
-	diff test_syntax.log test_syntax.ref
+	- diff test_syntax.log test_syntax.ref
 
 test_typecheck:
 	- ../mwrap -cppcomplex test_typecheck.mw 2> test_typecheck.log 
