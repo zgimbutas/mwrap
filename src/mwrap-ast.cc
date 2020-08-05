@@ -76,26 +76,22 @@ char *promote_int(char* name)
   if( strcmp(name,"uchar") == 0 ) mw_use_uchar = 1;
 
   /* Promote integers */
-  if( mw_promote_int == 2 )
+  if( mw_promote_int == 1 )
     {      
-      if( strcmp(name,"int") == 0 ) return strdup("ptrdiff_t");
-      if( strcmp(name,"long") == 0 ) return strdup("ptrdiff_t");
-      if( strcmp(name,"uint") == 0 ) return strdup("size_t");
-      if( strcmp(name,"ulong") == 0 ) return strdup("size_t");
-    }
-  if( mw_promote_int == 3 )
-    {      
+      if( strcmp(name,"uint") == 0 ) mw_use_ulong = 1;
       if( strcmp(name,"int") == 0 ) return strdup("long");
       if( strcmp(name,"uint") == 0 ) return strdup("ulong");
     }
-  if( mw_promote_int == 5 )
+  if( mw_promote_int == 2 )
     {      
+      if( strcmp(name,"uint") == 0 ) mw_use_ulong = 1;
+      if( strcmp(name,"ulong") == 0 ) mw_use_ulong = 1;
       if( strcmp(name,"int") == 0 ) return strdup("long");
       if( strcmp(name,"long") == 0 ) return strdup("long");
       if( strcmp(name,"uint") == 0 ) return strdup("ulong");
       if( strcmp(name,"ulong") == 0 ) return strdup("ulong");
     }
-  if( mw_promote_int == 7 )
+  if( mw_promote_int == 3 )
     {      
       if( strcmp(name,"int") == 0 ) mw_use_int32_t = 1;
       if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;
@@ -106,7 +102,7 @@ char *promote_int(char* name)
       if( strcmp(name,"uint") == 0 ) return strdup("uint64_t");
       if( strcmp(name,"ulong") == 0 ) return strdup("uint64_t");
     }
-  if( mw_promote_int == 8 )
+  if( mw_promote_int == 4 )
     {      
       if( strcmp(name,"int") == 0 ) mw_use_int64_t = 1;
       if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;

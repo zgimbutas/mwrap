@@ -294,10 +294,10 @@ int main(int argc, char** argv)
                 listing_flag = 1;
             if (strcmp(argv[j], "-catch") == 0)
                 mw_generate_catch = true;
+            if (strcmp(argv[j], "-i8") == 0)
+                mw_promote_int = 4;
 	    if (strcmp(argv[j], "-promote") == 0 && j+1 < argc)
                 mw_promote_int = atoi(argv[j+1]);
-            if (strcmp(argv[j], "-i8") == 0)
-                mw_promote_int = 8;
             if (strcmp(argv[j], "-c99complex") == 0) 
                 mw_use_c99_complex = true;
             if (strcmp(argv[j], "-cppcomplex") == 0) 
