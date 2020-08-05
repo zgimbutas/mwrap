@@ -9,6 +9,7 @@ mwrap - Octave/MATLAB mex generator
 .OP \-mb
 .OP \-list
 .OP \-catch
+.OP \-i8
 .OP \-c99complex
 .OP \-cppcomplex
 \fIinfile1\fP \fIinfile2\fP ...
@@ -57,6 +58,12 @@ from redirect output by the \-mb flag.
 .B \-catch
 surround library calls in try/catch blocks in order to intercept C++
 exceptions.
+.
+.TP
+.B \-i8
+convert int, long, uint, ulong types to int64_t, uint64_t. This provides
+a convenient way to interface with -fdefault-integer-8 and 
+-i8 flags used by Fortran compilers.
 .
 .TP
 .B \-c99complex
