@@ -258,7 +258,7 @@ const char* help_string =
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"
-"        [-list] [-catch] infile1 infile2 ...\n"
+"        [-list] [-catch] [-i8] [-c99complex] [-cppcomplex] infile1 infile2 ...\n"
 "\n"
 "  -mex outputmex -- specify the MATLAB mex function name\n"
 "  -m output.m    -- generate the MATLAB stub called output.m\n"
