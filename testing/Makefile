@@ -4,7 +4,7 @@ all: test_transfers test_cpp_complex $(TESTC99COMPLEX) test_syntax \
 	test_typecheck test_catch test_fortran1 test_fortran2 \
 	test_redirect test_include test_single_cpp
 # run the tests...
-	octave test_all.m
+	octave-cli --no-init-file --quiet test_all.m
 
 test_transfers: 
 	../mwrap -mex test_transfersmex \
