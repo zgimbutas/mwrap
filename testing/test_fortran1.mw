@@ -6,6 +6,7 @@ $ #endif
 $ int foo_(int* a, int* b, int* c)
 $ {
 $     *a = *b + *c;
+$     return(0);
 $ }
 
 # FORTRAN foo(output int* a, int 1, int 2);
