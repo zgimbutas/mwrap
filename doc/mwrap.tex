@@ -761,10 +761,13 @@ can be passed to the {\tt mex} script to change this behavior:
 \begin{itemize}
 \item
   {\tt -DMWF77\_CAPS} -- Assume the FORTRAN compiler uses all-caps
-  names and no extra underscores.  Used by Compaq FORTRAN (I think).
+  names and no extra underscores.  Used by Compaq FORTRAN, and intel fortran compiler on windows (I think).
 \item
   {\tt -DMWF77\_UNDERSCORE1} -- Append a single underscore to an
-  all-lower-case name.  Used by the Intel FORTRAN compiler.
+  all-lower-case name.  Used by the GNU FORTRAN compiler and the intel fortran compiler on UNIX systems (I think).
+\item
+  {\tt -DMWF77\_UNDERSCORE0} -- Append no underscore to an
+  all-lower-case name.  Used by the GNU fortran with the -fno-underscoring flag
 \end{itemize}
 
 It is possible to use the {\tt typedef numeric} construct to introduce
