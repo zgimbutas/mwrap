@@ -281,6 +281,28 @@ void mex_define_underscore1_fnames(FILE* fp, Func* f)
 }
 
 
+void mex_define_underscore0_fname(FILE* fp, Func* f)
+{
+    fprintf(fp, "#define MWF77_%s ", f->funcv);
+    for (char* s = f->funcv; *s; ++s)
+        fputc(tolower(*s), fp);
+    fprintf(fp, "\n");
+}
+
+
+void mex_define_underscore0_fnames(FILE* fp, Func* f)
+{
+    set<string> fnames;
+    for (; f; f = f->next) {
+        if (f->fort && fnames.find(f->funcv) == fnames.end()) {
+            mex_define_underscore0_fname(fp, f);
+            fnames.insert(f->funcv);
+        }
+    }
+}
+
+
+
 void mex_define_f2c_fname(FILE* fp, Func* f)
 {
     fprintf(fp, "#define MWF77_%s ", f->funcv);
@@ -314,6 +336,8 @@ void mex_define_fnames(FILE* fp, Func* f)
     mex_define_caps_fnames(fp, f);
     fprintf(fp, "#elif defined(MWF77_UNDERSCORE1)\n");
     mex_define_underscore1_fnames(fp, f);
+    fprintf(fp, "#elif defined(MWF77_UNDERSCORE0)\n");
+    mex_define_underscore0_fnames(fp, f);
     fprintf(fp, "#else /* f2c convention */\n");
     mex_define_f2c_fnames(fp, f);
     fprintf(fp, "#endif\n\n");

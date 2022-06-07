@@ -1,4 +1,4 @@
-MWrap 1.0
+MWrap 1.1
 =========
 
 MWrap is an interface generation system in the spirit of SWIG or matwrap.  From
@@ -21,7 +21,7 @@ Author: David Bindel <bindel@cs.cornell.edu>
 
     Initial revision, clone David's repository
 
----
+------
 
 Version 1.0
 Authors: Zydrunas Gimbutas, Alex Barnett, Libin Lu
@@ -29,6 +29,13 @@ Authors: Zydrunas Gimbutas, Alex Barnett, Libin Lu
     Add support for 64-bit Matlab and gcc-4.6
     Add support for gcc 7.3+
     Add support for Matlab R2018a complex interleaved API
-    Add support for C99 int32_t, int64_t, uint32_t, uint64_t 
+    Add support for C99 int32_t, int64_t, uint32_t, uint64_t
     Allow single precision Matlab inputs and outputs
+
+-----
+
+Version 1.1
+Authors: Manas Rachh
+
+    Add support for gfortran -fno-underscoring flag
 

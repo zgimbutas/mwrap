@@ -1,5 +1,8 @@
 Recent updates:
 
+Version 1.1 (Jun 7, 2022)
+Added support for gfortran -fno-underscoring flag
+
 Version 1.0 (Aug 4, 2020)
 Added support for 64-bit Matlab and gcc-4.6
 Added support for gcc 7.3+

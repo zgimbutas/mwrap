@@ -254,7 +254,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 1.0 - MEX file generator for MATLAB and Octave\n"
+"mwrap 1.1 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"
