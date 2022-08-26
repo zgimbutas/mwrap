@@ -21,16 +21,18 @@ David Bindel's user's guide (`mwrap.pdf`) describes MWrap in detail; you can als
 Alex Barnett also maintains a set of minimally complete tutorial examples of calling C/Fortran libraries (including OpenMP) from MATLAB/Octave, using MWrap, at https://github.com/ahbarnett/mwrapdemo
 
 
+Contributors and version history
+--------------------------------
 
-Version history
----------------
+MWrap was originally written by David Bindel, c. 2009.
+It was moved to github in c. 2015 in order to add new features, and is now maintained by Zydrunas Gimbutas, Alex Barnett, Libin Lu, Manas Rachh, and Rafael Laboissière.
 
 Version 0.33 (c. 2009)
 Author: David Bindel <bindel@cs.cornell.edu>
     Initial revision, clone David's repository (c. 2015)
 
 Version 1.0 (c. 2020)
-Contributors: Zydrunas Gimbutas, Alex Barnett, Libin Lu
+Contributors: Zydrunas Gimbutas, Alex Barnett, Libin Lu.
     Add support for 64-bit Matlab and gcc-4.6
     Add support for gcc 7.3+
     Add support for Matlab R2018a complex interleaved API
@@ -38,5 +40,7 @@ Contributors: Zydrunas Gimbutas, Alex Barnett, Libin Lu
     Allow single precision Matlab inputs and outputs
 
 Version 1.1 (2022)
-Contributors: Manas Rachh, Zydrunas Gimbutas
+Contributors: Manas Rachh, Zydrunas Gimbutas.
     Add support for gfortran -fno-underscoring flag
+
+Also see https://github.com/zgimbutas/mwrap/tags
