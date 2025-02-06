@@ -260,7 +260,7 @@ void mex_define_copiers(FILE* fp)
          iter != scalar_decls.end();
          ++iter){
         mex_define_copiers(fp, iter->c_str());
-        mex_define_gpu_copiers(fp, iter->c_str());
+        if (mw_use_gpu) mex_define_gpu_copiers(fp, iter->c_str());
     }
     for( set<string>::iterator iter = cscalar_decls.begin();
          iter != cscalar_decls.end();
