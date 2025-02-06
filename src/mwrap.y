@@ -20,6 +20,7 @@ extern "C" {
 
 using std::string;
 
+bool  mw_use_gpu = 0;         // Use GPU?
 bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
 bool  mw_use_c99_complex = false; // Use C99 complex types?
@@ -98,10 +99,12 @@ inline void add_func(Func* func)
 %token <string> ID 
 %token <string> NUMBER STRING
 %token <char> INPUT OUTPUT INOUT
+%token <char> CPU GPU
 
 %type <func> func funcall
 %type <var>  var basevar args argsrest
 %type <c>    iospec
+%type <c>    devicespec
 %type <qual> quals aqual
 %type <expr> arrayspec exprs exprrest expr
 %type <inherits> inheritslist inheritsrest
@@ -174,19 +177,24 @@ argsrest:
   ',' var argsrest {$$ = $2; $$->next = $3; }
   | { $$ = NULL; } ;
 
-basevar: ID ID               { $$ = new Var('o', promote_int($1), NULL, $2); }
-basevar: ID quals ID         { $$ = new Var('o', promote_int($1), $2,   $3); }
-basevar: ID ID aqual         { $$ = new Var('o', promote_int($1), $3,   $2); }
+basevar: ID ID               { $$ = new Var('c', 'o', promote_int($1), NULL, $2); }
+basevar: ID quals ID         { $$ = new Var('c', 'o', promote_int($1), $2,   $3); }
+basevar: ID ID aqual         { $$ = new Var('c', 'o', promote_int($1), $3,   $2); }
 
-var: iospec ID ID            { $$ = new Var($1,  promote_int($2), NULL, $3); }
-var: iospec ID quals ID      { $$ = new Var($1,  promote_int($2), $3,   $4); }
-var: iospec ID ID aqual      { $$ = new Var($1,  promote_int($2), $4,   $3); }
+var: devicespec iospec ID ID            { $$ = new Var($1, $2,  promote_int($3), NULL, $4); }
+var: devicespec iospec ID quals ID      { $$ = new Var($1, $2,  promote_int($3), $4,   $5); }
+var: devicespec iospec ID ID aqual      { $$ = new Var($1, $2,  promote_int($3), $5,   $4); }
 
-var: iospec ID NUMBER        { $$ = new Var($1,  promote_int($2), NULL, $3); }
-var: iospec ID quals NUMBER  { $$ = new Var($1,  promote_int($2), $3,   $4); }
+var: devicespec iospec ID NUMBER        { $$ = new Var($1, $2,  promote_int($3), NULL, $4); }
+var: devicespec iospec ID quals NUMBER  { $$ = new Var($1, $2,  promote_int($3), $4,   $5); }
 
-var: iospec ID STRING        { $$ = new Var($1,  promote_int($2), NULL, $3); }
-var: iospec ID quals STRING  { $$ = new Var($1,  promote_int($2), $3,   $4); }
+var: devicespec iospec ID STRING        { $$ = new Var($1, $2,  promote_int($3), NULL, $4); }
+var: devicespec iospec ID quals STRING  { $$ = new Var($1, $2,  promote_int($3), $4,   $5); }
+
+devicespec: 
+  CPU   { $$ = 'c'; }
+  | GPU { $$ = 'g'; }
+  |     { $$ = 'c'; } ;
 
 iospec: 
   INPUT    { $$ = 'i'; }
@@ -258,7 +266,7 @@ const char* help_string =
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"
-"        [-catch] [-i8] [-c99complex] [-cppcomplex] infile1 infile2 ...\n"
+"        [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu] infile1 infile2 ...\n"
 "\n"
 "  -mex outputmex -- specify the MATLAB mex function name\n"
 "  -m output.m    -- generate the MATLAB stub called output.m\n"
@@ -269,6 +277,7 @@ const char* help_string =
 "  -i8            -- convert int, long, uint, ulong to int64_t, uint64_t\n"
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
+"  -gpu           -- add support code for matlab gpuarray\n"
 "\n";
 
 int main(int argc, char** argv)
@@ -300,6 +309,8 @@ int main(int argc, char** argv)
                 mw_use_c99_complex = true;
             if (strcmp(argv[j], "-cppcomplex") == 0) 
                 mw_use_cpp_complex = true;
+            if (strcmp(argv[j], "-gpu") == 0)
+                mw_use_gpu = true;
         }
 
         if (mw_use_c99_complex || mw_use_cpp_complex) {
@@ -317,7 +328,8 @@ int main(int argc, char** argv)
                      strcmp(argv[j], "-catch") == 0 ||
 		     strcmp(argv[j], "-i8") == 0 ||
                      strcmp(argv[j], "-c99complex") == 0 ||
-                     strcmp(argv[j], "-cppcomplex") == 0);
+                     strcmp(argv[j], "-cppcomplex") == 0 ||
+                     strcmp(argv[j], "-gpu") == 0);
             else {
                 linenum = 1;
                 type_errs = 0;

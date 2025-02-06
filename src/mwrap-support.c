@@ -363,6 +363,19 @@ mxArray* mxWrapStrncpy_single(const char* s)
     }
 }
 
+float mxWrapGetScalar_single(const mxArray* a, const char** e)
+{
+    if (!a || mxGetClassID(a) != mxSINGLE_CLASS || mxGetM(a)*mxGetN(a) != 1) {
+        *e = "Invalid scalar argument";
+        return 0;
+    }
+    if( mxIsComplex(a) )
+      return (float) (*mxGetComplexSingles(a)).real;
+    else
+      return (float) (*mxGetSingles(a));
+}
+
+
 char* mxWrapGetString_single(const mxArray* a, const char** e)
 {
     char* s;
@@ -378,19 +391,6 @@ char* mxWrapGetString_single(const mxArray* a, const char** e)
     else
         mxGetString(a, s, slen);
     return s;
-}
-
-
-float mxWrapGetScalar_single(const mxArray* a, const char** e)
-{
-    if (!a || mxGetClassID(a) != mxSINGLE_CLASS || mxGetM(a)*mxGetN(a) != 1) {
-        *e = "Invalid scalar argument";
-        return 0;
-    }
-    if( mxIsComplex(a) )
-      return (float) (*mxGetComplexSingles(a)).real;
-    else
-      return (float) (*mxGetSingles(a));
 }
 
 #define mxWrapGetArrayDef_single(func, T) \
@@ -962,3 +962,131 @@ mxArray* func(const T* q, mwSize m, mwSize n) \
 
 
 #endif
+
+#define mxWrapGetGPUArrayDef(func, T) \
+T* func(const mxArray* a, const char** e)     \
+{ \
+    T* array; \
+    mwSize arraylen; \
+    mwIndex i; \
+    T* p; \
+    double* q; \
+    if (!a || mxGetClassID(a) != mxDOUBLE_CLASS) { \
+        *e = "Invalid array argument, mxDOUBLE_CLASS expected"; \
+        return 0; \
+    } \
+    arraylen = mxGetM(a)*mxGetN(a); \
+    array = (T*) mxMalloc(mxGetM(a)*mxGetN(a) * sizeof(T)); \
+    p = array; \
+    q = mxGetPr(a); \
+    for (i = 0; i < arraylen; ++i) \
+        *p++ = (T) (*q++); \
+    return array; \
+}
+
+
+#define mxWrapCopyGPUArrayDef(func, T) \
+void func(mxArray* a, const T* q, mwSize n) \
+{ \
+    mwIndex i; \
+    double* p = mxGetPr(a); \
+    for (i = 0; i < n; ++i) \
+        *p++ = *q++; \
+}
+
+
+#define mxWrapReturnGPUArrayDef(func, T) \
+mxArray* func(const T* q, mwSize m, mwSize n) \
+{ \
+    mwIndex i; \
+    double* p; \
+    if (!q) { \
+        return mxCreateDoubleMatrix(0,0, mxREAL); \
+    } else { \
+        mxArray* a = mxCreateDoubleMatrix(m,n, mxREAL); \
+        p = mxGetPr(a); \
+        for (i = 0; i < m*n; ++i) \
+            *p++ = *q++; \
+        return a; \
+    } \
+}
+
+#define mxWrapReturnGPUArrayPDef(func, T) \
+T* func(const T* q, mwSize m, mwSize n) \
+{ \
+    mwIndex i; \
+    double* p; \
+    if (!q) { \
+        return mxCreateDoubleMatrix(0,0, mxREAL); \
+    } else { \
+        mxArray* a = mxCreateDoubleMatrix(m,n, mxREAL); \
+        p = mxGetPr(a); \
+        for (i = 0; i < m*n; ++i) \
+            *p++ = *q++; \
+        return a; \
+    } \
+}
+
+#define mxWrapGetGPUArrayDef_single(func, T) \
+T* func(const mxArray* a, const char** e)     \
+{ \
+    T* array; \
+    mwSize arraylen; \
+    mwIndex i; \
+    T* p; \
+    double* q; \
+    if (!a || mxGetClassID(a) != mxDOUBLE_CLASS) { \
+        *e = "Invalid array argument, mxDOUBLE_CLASS expected"; \
+        return 0; \
+    } \
+    arraylen = mxGetM(a)*mxGetN(a); \
+    array = (T*) mxMalloc(mxGetM(a)*mxGetN(a) * sizeof(T)); \
+    p = array; \
+    q = mxGetPr(a); \
+    for (i = 0; i < arraylen; ++i) \
+        *p++ = (T) (*q++); \
+    return array; \
+}
+
+
+#define mxWrapCopyGPUArrayDef_single(func, T) \
+void func(mxArray* a, const T* q, mwSize n) \
+{ \
+    mwIndex i; \
+    double* p = mxGetPr(a); \
+    for (i = 0; i < n; ++i) \
+        *p++ = *q++; \
+}
+
+
+#define mxWrapReturnGPUArrayDef_single(func, T) \
+mxArray* func(const T* q, mwSize m, mwSize n) \
+{ \
+    mwIndex i; \
+    double* p; \
+    if (!q) { \
+        return mxCreateDoubleMatrix(0,0, mxREAL); \
+    } else { \
+        mxArray* a = mxCreateDoubleMatrix(m,n, mxREAL); \
+        p = mxGetPr(a); \
+        for (i = 0; i < m*n; ++i) \
+            *p++ = *q++; \
+        return a; \
+    } \
+}
+
+#define mxWrapReturnGPUArrayPDef_single(func, T) \
+T* func(const T* q, mwSize m, mwSize n) \
+{ \
+    mwIndex i; \
+    double* p; \
+    if (!q) { \
+        return mxCreateDoubleMatrix(0,0, mxREAL); \
+    } else { \
+        mxArray* a = mxCreateDoubleMatrix(m,n, mxREAL); \
+        p = mxGetPr(a); \
+        for (i = 0; i < m*n; ++i) \
+            *p++ = *q++; \
+        return a; \
+    } \
+}

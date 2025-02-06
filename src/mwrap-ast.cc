@@ -198,6 +198,17 @@ void print(FILE* fp, TypeQual* q)
         fprintf(fp, "%c", q->qual);
 }
 
+void print_devicespec(FILE* fp, Var* v)
+{
+    /*
+    if (v->devicespec == 'c')
+        fprintf(fp, "cpu ");
+    else if (v->devicespec == 'g')
+        fprintf(fp, "gpu ");
+    */
+    if (v->devicespec == 'g')
+        fprintf(fp, "gpu ");
+}
 
 void print_iospec(FILE* fp, Var* v)
 {
@@ -220,6 +231,7 @@ void print_args(FILE* fp, Var* v)
 {
     if (!v)
         return;
+    print_devicespec(fp, v);
     print_iospec(fp, v);
     print_var(fp, v);
     if (v->next) {
@@ -279,6 +291,11 @@ string id_string(Var* v)
         return "";
 
     string name;
+    if (v->devicespec == 'c')
+        name += "c ";
+    else if (v->devicespec == 'g')
+        name += "g ";
+
     if (v->iospec == 'i')
         name += "i ";
     else if (v->iospec == 'o')
