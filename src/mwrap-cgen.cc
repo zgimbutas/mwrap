@@ -16,6 +16,18 @@
 
 /* -- General utility functions -- */
 
+
+/*
+ * map dcomplex/fcomplex to cuda complex types
+ */
+char *basetype_to_cucomplex(const char* name)
+{
+  if( strcmp(name,"fcomplex") == 0 ) return strdup("cuFloatComplex");
+  if( strcmp(name,"dcomplex") == 0 ) return strdup("cuDoubleComplex");
+  return strdup(name);
+}
+
+
 /*
  * map type to mxClassID
  */
@@ -138,6 +150,10 @@ void mex_cpp_complex(FILE* fp)
             "#define setz_fcomplex(z,r,i)  *z = fcomplex(r,i)\n\n");
 }
 
+void mex_gpucpp_complex(FILE* fp)
+{
+    fprintf(fp,"#include <cuComplex.h>\n\n");
+}
 
 void mex_c99_complex(FILE* fp)
 {
@@ -549,10 +565,22 @@ void mex_cast_get_p(FILE* fp, const char* basetype, int input_label)
 
 void mex_declare_type(char* typebuf, Var* v)
 {
-    if (is_obj(v->tinfo) || is_array(v->tinfo))
-        sprintf(typebuf, "%s*", v->basetype);
-    else if (v->tinfo == VT_rarray)
-        sprintf(typebuf, "const %s*", v->basetype);
+    if (is_obj(v->tinfo) || is_array(v->tinfo)){
+        if(v->devicespec == 'g'){
+            sprintf(typebuf, "%s*", basetype_to_cucomplex(v->basetype));
+        }
+        else{
+            sprintf(typebuf, "%s*", v->basetype);
+        }
+    }
+    else if (v->tinfo == VT_rarray){
+        if(v->devicespec == 'g'){
+            sprintf(typebuf, "const %s*", basetype_to_cucomplex(v->basetype));
+        }
+        else{
+            sprintf(typebuf, "const %s*", v->basetype);
+        }
+    }
     else if (v->tinfo == VT_scalar ||
              v->tinfo == VT_cscalar ||
              v->tinfo == VT_zscalar ||
@@ -871,7 +899,7 @@ void mex_unpack_input_array(FILE* fp, Var* v)
         "    if (mw_err_txt_) goto mw_err_label;\n"
         "    mxGPUArray_in%d_ = mxGPUCreateFromMxArray(prhs[%d]);\n"
         "    in%d_ = (%s *)mxGPUGetDataReadOnly(mxGPUArray_in%d_);\n\n",
-        v->input_label, v->input_label, v->input_label, v->input_label, v->basetype, v->input_label);
+        v->input_label, v->input_label, v->input_label, v->input_label, basetype_to_cucomplex(v->basetype), v->input_label);
         }
     }
 
@@ -1070,7 +1098,7 @@ void mex_alloc_output(FILE* fp, Var* v, bool return_flag)
                 fprintf(fp, "    gpu_outdims%d_[0] = dim%d_;\n", v->output_label, e->input_label);
             }
             fprintf(fp, "    mxGPUArray_out%d_ = mxGPUCreateGPUArray(%d, gpu_outdims%d_, %s, %s, MX_GPU_DO_NOT_INITIALIZE);\n", v->output_label, ndims, v->output_label, mxclassid, mtype);
-            fprintf(fp, "    out%d_ = (%s *)mxGPUGetData(mxGPUArray_out%d_);\n\n", v->output_label, v->basetype, v->output_label);
+            fprintf(fp, "    out%d_ = (%s *)mxGPUGetData(mxGPUArray_out%d_);\n\n", v->output_label, basetype_to_cucomplex(v->basetype), v->output_label);
         }
     }
     mex_alloc_output(fp, v->next, return_flag);
@@ -1719,6 +1747,8 @@ void print_mex_init(FILE* fp)
     if (mw_use_c99_complex)
         mex_c99_complex(fp);
     else if (mw_use_cpp_complex)
+        if (mw_use_gpu)
+            mex_gpucpp_complex(fp);
         mex_cpp_complex(fp);
 
     //    fprintf(fp, "\n");
