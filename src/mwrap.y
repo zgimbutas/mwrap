@@ -106,7 +106,7 @@ inline void add_func(Func* func)
 %type <expr> arrayspec exprs exprrest expr
 %type <inherits> inheritslist inheritsrest
 
-%error-verbose
+%define parse.error verbose
 
 %%
 statements: statement statements | ;
