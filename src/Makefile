@@ -12,10 +12,10 @@ include ../make.inc
 mwrap.o: mwrap.cc lex.yy.c mwrap-ast.h
 	$(CXX) -c mwrap.cc
 
-mwrap.cc: mwrap.y
+mwrap.cc mwrap.hh: mwrap.y
 	$(BISON) -d -v mwrap.y -o mwrap.cc
 
-lex.yy.o: lex.yy.c
+lex.yy.o: lex.yy.c mwrap.hh
 	$(CC) -c lex.yy.c
 
 lex.yy.c: mwrap.l
