@@ -106,7 +106,15 @@ inline void add_func(Func* func)
 %type <expr> arrayspec exprs exprrest expr
 %type <inherits> inheritslist inheritsrest
 
+%error-verbose
+/* Avoid deprecated Bison directive
+The directive %error-verbose is deprecated since Bison 3.0 (and
+advertised as such since Bison 3.3). Use "%define parse.error verbose"
+instead. MacOS Xcode, Mar 10, 2025, bison --version, bison (GNU Bison) 2.3
+*/
+/*
 %define parse.error verbose
+*/
 
 %%
 statements: statement statements | ;
