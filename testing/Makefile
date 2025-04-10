@@ -81,6 +81,9 @@ test_single_c99:
 		-mb test_single.mw
 	$(MEX) test_singlemex.c
 
+test_gpu:
+	../mwrap -gpu -list -cppcomplex -mb -mex test_gpu -c test_gpu.cu test_gpu.mw
+
 clean:
 	rm -f *~ *.mex* *.o* test_typecheck.log
 	rm -f test_fortran1.m test_fortran2.m test_transfers.m test_catch.m

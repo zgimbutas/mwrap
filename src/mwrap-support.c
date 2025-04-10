@@ -43,6 +43,14 @@
  */
 int* mexprofrecord_= NULL;
 
+double mxWrapGetChar(const mxArray* a, const char** e)
+{
+    if (!a || mxGetClassID(a) != mxCHAR_CLASS || mxGetM(a)*mxGetN(a) != 1) {
+        *e = "Invalid char argument";
+        return 0;
+    }
+    return (char) (*mxGetChars(a));
+}
 
 /*
  * Support routines for copying data into and out of the MEX stubs, R2018a
@@ -355,6 +363,19 @@ mxArray* mxWrapStrncpy_single(const char* s)
     }
 }
 
+float mxWrapGetScalar_single(const mxArray* a, const char** e)
+{
+    if (!a || mxGetClassID(a) != mxSINGLE_CLASS || mxGetM(a)*mxGetN(a) != 1) {
+        *e = "Invalid scalar argument";
+        return 0;
+    }
+    if( mxIsComplex(a) )
+      return (float) (*mxGetComplexSingles(a)).real;
+    else
+      return (float) (*mxGetSingles(a));
+}
+
+
 char* mxWrapGetString_single(const mxArray* a, const char** e)
 {
     char* s;
@@ -370,19 +391,6 @@ char* mxWrapGetString_single(const mxArray* a, const char** e)
     else
         mxGetString(a, s, slen);
     return s;
-}
-
-
-float mxWrapGetScalar_single(const mxArray* a, const char** e)
-{
-    if (!a || mxGetClassID(a) != mxSINGLE_CLASS || mxGetM(a)*mxGetN(a) != 1) {
-        *e = "Invalid scalar argument";
-        return 0;
-    }
-    if( mxIsComplex(a) )
-      return (float) (*mxGetComplexSingles(a)).real;
-    else
-      return (float) (*mxGetSingles(a));
 }
 
 #define mxWrapGetArrayDef_single(func, T) \

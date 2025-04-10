@@ -209,6 +209,8 @@ extern void get_include_name();
 <CSTATE>"inout"   { return INOUT; }
 <CSTATE>"class"   { return CLASS; }
 <CSTATE>"typedef" { return TYPEDEF; }
+<CSTATE>"cpu"     { return CPU; }
+<CSTATE>"gpu"     { return GPU; }
 
 <CSTATE>((::)?[_a-zA-Z][_a-zA-Z0-9]*)* { 
     yylval.string = mwrap_strdup(yytext); 

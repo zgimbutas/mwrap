@@ -66,13 +66,14 @@ struct TypeQual {
 };
 
 struct Var {
-    Var(char iospec, char* basetype, TypeQual* qual, char* name) :
-        iospec(iospec), basetype(basetype), qual(qual), tinfo(VT_unk),
+    Var(char devicespec, char iospec, char* basetype, TypeQual* qual, char* name) :
+        devicespec(devicespec), iospec(iospec), basetype(basetype), qual(qual), tinfo(VT_unk),
         name(name), next(NULL), input_label(-1), output_label(-1) {}
 
     int input_label;  // Index in input arg list
     int output_label; // Index in output arg list
     char iospec;      // Indicate input ('i'), output ('o'), or both ('b')
+    char devicespec;  // Indicate cpu ('c'), gpu ('g')
     char* basetype;   // Name of the base type
     TypeQual* qual;   // Type qualifier (pointer, ref, etc)
     int tinfo;        // General type identifier (see VT_* list above)
@@ -137,6 +138,7 @@ void destroy(Func* func);
 void destroy(InheritsDecl* ilist);
 void destroy_inherits();
 
+extern bool mw_use_gpu;
 extern bool mw_generate_catch;
 extern bool mw_use_c99_complex;
 extern bool mw_use_cpp_complex;
