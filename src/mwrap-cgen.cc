@@ -244,30 +244,6 @@ void mex_define_zcopiers(FILE* fp, const char* name, const char* ztype)
             name, name, name, name);
 }
 
-void mex_define_gpu_copiers(FILE* fp, const char* name)
-{
-  /* Skip C99 int32_t, int64_t, uint32_t, uint64_t, if not detected */
-  if( (strcmp(name, "int32_t") == 0 ) && ( mw_use_int32_t == 0 ) ) return;
-  if( (strcmp(name, "int64_t") == 0 ) && ( mw_use_int64_t == 0 ) ) return;
-  if( (strcmp(name, "uint32_t") == 0 ) && ( mw_use_uint32_t == 0 ) ) return;
-  if( (strcmp(name, "uint64_t") == 0 ) && ( mw_use_uint64_t == 0 ) ) return;
-
-  if( (strcmp(name, "ulong") == 0 ) && ( mw_use_ulong == 0 ) ) return;
-  if( (strcmp(name, "uint") == 0 ) && ( mw_use_uint == 0 ) ) return;
-  if( (strcmp(name, "ushort") == 0 ) && ( mw_use_ushort == 0 ) ) return;
-  if( (strcmp(name, "uchar") == 0 ) && ( mw_use_uchar == 0 ) ) return;
-
-  /* Define copiers */
-  fprintf(fp, "mxWrapGetGPUArrayDef(mxWrapGetGPUArray_%s, %s)\n", name, name);
-  fprintf(fp, "mxWrapCopyGPUArrayDef    (mxWrapCopyGPUArray_%s,     %s)\n", name, name);
-  fprintf(fp, "mxWrapReturnGPUArrayDef  (mxWrapReturnGPUArray_%s,   %s)\n", name, name);
-
-  /* Single precision */
-  fprintf(fp, "mxWrapGetGPUArrayDef_single(mxWrapGetGPUArray_single_%s, %s)\n", name, name);
-  fprintf(fp, "mxWrapCopyGPUArrayDef_single    (mxWrapGPUArrayCopy_single_%s,     %s)\n", name, name);
-  fprintf(fp, "mxWrapReturnGPUArrayDef_single  (mxWrapReturnGPUArray_single_%s,   %s)\n", name, name);
-}
-
 void mex_define_copiers(FILE* fp)
 {
     fprintf(fp, "\n\n\n");
@@ -276,7 +252,6 @@ void mex_define_copiers(FILE* fp)
          iter != scalar_decls.end();
          ++iter){
         mex_define_copiers(fp, iter->c_str());
-        if (mw_use_gpu) mex_define_gpu_copiers(fp, iter->c_str());
     }
     for( set<string>::iterator iter = cscalar_decls.begin();
          iter != cscalar_decls.end();

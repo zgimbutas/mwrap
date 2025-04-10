@@ -200,12 +200,6 @@ void print(FILE* fp, TypeQual* q)
 
 void print_devicespec(FILE* fp, Var* v)
 {
-    /*
-    if (v->devicespec == 'c')
-        fprintf(fp, "cpu ");
-    else if (v->devicespec == 'g')
-        fprintf(fp, "gpu ");
-    */
     if (v->devicespec == 'g')
         fprintf(fp, "gpu ");
 }
