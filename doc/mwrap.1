@@ -12,6 +12,7 @@ mwrap - Octave/MATLAB mex generator
 .OP \-i8
 .OP \-c99complex
 .OP \-cppcomplex
+.OP \-gpu
 \fIinfile1\fP \fIinfile2\fP ...
 .br
 .SH DESCRIPTION
@@ -75,6 +76,10 @@ use the C99 complex floating point types as the default \fBdcomplex\fP and
 .B \-cppcomplex
 use the C++ complex floating point types as the default \fBdcomplex\fP and
 \fBfcomplex\fP types.
+.
+.TP
+.B \-gpu
+add support code for MATLAB gpuArray.
 
 .SH AUTHORS
 .LP

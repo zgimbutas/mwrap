@@ -43,4 +43,10 @@ Version 1.1 (2022)
 Contributors: Manas Rachh, Zydrunas Gimbutas.
     Add support for gfortran -fno-underscoring flag
 
+Version 1.2 (2025)
+Contributors:  Libin Lu, Rafael Laboissière, Zydrunas Gimbutas.
+    Cope with error verbose directive in both versions 2 and 3 of Bison
+    Add support for Matlab gpuArray
+    Add support for char scalar
+
 Also see https://github.com/zgimbutas/mwrap/tags

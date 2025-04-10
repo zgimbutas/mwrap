@@ -262,7 +262,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 1.1 - MEX file generator for MATLAB and Octave\n"
+"mwrap 1.2 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"
@@ -277,7 +277,7 @@ const char* help_string =
 "  -i8            -- convert int, long, uint, ulong to int64_t, uint64_t\n"
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
-"  -gpu           -- add support code for matlab gpuarray\n"
+"  -gpu           -- add support code for MATLAB gpuArray\n"
 "\n";
 
 int main(int argc, char** argv)
