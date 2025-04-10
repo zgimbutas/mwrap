@@ -12,10 +12,19 @@ include ../make.inc
 mwrap.o: mwrap.cc lex.yy.c mwrap-ast.h
 	$(CXX) -c mwrap.cc
 
-mwrap.cc: mwrap.y
+mwrap.cc mwrap.hh: mwrap.y
 	$(BISON) -d -v mwrap.y -o mwrap.cc
 
-lex.yy.o: lex.yy.c
+ifeq ($(shell bison --version 2>&1 | sed -n 's/^.*GNU Bison.* \([0-9]*\).*$$/\1/p'), 3)
+ERROR_VERBOSE = %define parse.error verbose
+else
+ERROR_VERBOSE = %error-verbose
+endif
+
+mwrap.y: mwrap.y.in
+	sed -e 's/@ERROR_VERBOSE@/$(ERROR_VERBOSE)/' < mwrap.y.in > mwrap.y
+
+lex.yy.o: lex.yy.c mwrap.hh
 	$(CC) -c lex.yy.c
 
 lex.yy.c: mwrap.l
@@ -48,5 +57,5 @@ clean:
 	rm -f stringify
 
 realclean: clean
-	rm -f lex.yy.c mwrap.cc mwrap.hh mwrap-support.h mwrap.pdf
+	rm -f mwrap.y lex.yy.c mwrap.cc mwrap.hh mwrap-support.h mwrap.pdf
 
