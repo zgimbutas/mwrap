@@ -3,6 +3,9 @@ include make.inc
 bin:
 	(cd src; make)
 
+doc:
+	(cd doc; make)
+
 test: 
 	(cd testing; make)
 

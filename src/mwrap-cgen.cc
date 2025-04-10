@@ -1722,9 +1722,11 @@ void print_mex_init(FILE* fp)
     if (mw_use_c99_complex)
         mex_c99_complex(fp);
     else if (mw_use_cpp_complex)
-        if (mw_use_gpu)
-            mex_gpucpp_complex(fp);
+      {
         mex_cpp_complex(fp);
+	if (mw_use_gpu)
+	  mex_gpucpp_complex(fp);
+      }
 
     //    fprintf(fp, "\n");
     //    fprintf(fp, "%s", mwrap_compat_type_support);
