@@ -509,17 +509,6 @@ write
 \end{verbatim}
 
 
-\subsection{Constants}
-
-The {\it const} type in \mwrap\ refers to a C/C++ symbolic constant or
-global variable.  The name of the variable is output directly into the
-compiled code.  For example, to print a string to {\tt stderr}, we can
-write
-\begin{verbatim}
-  # fprintf(const stderr, cstring s);
-\end{verbatim}
-
-
 \subsection{{\tt mxSINGLE\_CLASS} and {\tt mxDOUBLE\_CLASS}}
 
 By default, {\tt mwrap 0.33} expected all input and output numeric
@@ -534,11 +523,11 @@ perform the required type conversions manually using {\tt single} or
 \subsection{{\tt mxCHAR\_CLASS}}
 
 {\tt mwrap (1.2+)} allows character constants of {\tt mxCHAR\_CLASS}
-and forces type checking. An error {\tt 'Invalid array argument,
-  mxCHAR\_CLASS expected'} will be issued if a mismatched Matlab
-variable is detected during runtime. The user is expected to perform
-the required type conversions manually using {\tt char} MATLAB
-command.
+for {\tt char} types and forces type checking. An error {\tt 'Invalid
+  array argument, mxCHAR\_CLASS expected'} will be issued if a
+mismatched Matlab variable is detected during runtime. The user is
+expected to perform the required type conversions manually using {\tt
+  char} MATLAB command.
 
 
 \section{Example}
