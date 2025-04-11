@@ -531,6 +531,15 @@ Matlab variable is detected during runtime. The user is expected to
 perform the required type conversions manually using {\tt single} or
 {\tt double} MATLAB commands.
 
+\subsection{{\tt mxCHAR\_CLASS}}
+
+{\tt mwrap (1.2+)} allows character constants of {\tt mxCHAR\_CLASS}
+and forces type checking. An error {\tt 'Invalid array argument,
+  mxCHAR\_CLASS expected'} will be issued if a mismatched Matlab
+variable is detected during runtime. The user is expected to perform
+the required type conversions manually using {\tt char} MATLAB
+command.
+
 
 \section{Example}
 
