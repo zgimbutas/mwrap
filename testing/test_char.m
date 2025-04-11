@@ -5,16 +5,18 @@ function test_char
 
 
 %fprintf('scalar real routines...\n') % -------------------------------------
-x = 1/3; ce = x+x; xc = single(x);
+x = 1/3; ce = x+x; xs = single(x);
 
 try
-c = addchar(xc,xc);   % should error
+c = addchar(xs,xs);   % should error
 catch ME
   assert(ME.message=='test_charmex: Invalid scalar argument, mxCHAR_CLASS expected')
 end
 
+x = x*ones(3,1); ce=x+x; xf = single(x);
+
 try
-c = arraddchar(xc,xc);   % should error
+c = arraddchar(xf,xf);   % should error
 catch ME
-  assert(ME.message=='test_charmex: Invalid array argument, mxDOUBLE_CLASS expected');
+  assert(ME.message=='test_charmex: Invalid array argument, mxCHAR_CLASS expected');
 end

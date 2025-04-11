@@ -68,14 +68,15 @@ test_include:
 		-m test_include.m test_include.mw
 	$(MEX) test_includemex.cc
 
+# these two are tested by test_char.m ...
 test_char_cpp: 
-	mwrap -cppcomplex -mex test_charmex \
+	../mwrap -cppcomplex -mex test_charmex \
 		-c test_charmex.cc \
 		-mb test_char.mw
 	$(MEX) test_charmex.cc
 
 test_char_c99: 
-	mwrap -mex test_charmex \
+	../mwrap -mex test_charmex \
 		-c test_charmex.c \
 		-mb test_char.mw
 	$(MEX) test_charmex.c

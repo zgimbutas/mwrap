@@ -43,7 +43,7 @@
  */
 int* mexprofrecord_= NULL;
 
-double mxWrapGetChar(const mxArray* a, const char** e)
+double mxWrapGetScalar_char(const mxArray* a, const char** e)
 {
     if (!a || mxGetClassID(a) != mxCHAR_CLASS || mxGetM(a)*mxGetN(a) != 1) {
         *e = "Invalid char argument";
@@ -97,7 +97,7 @@ mxArray* mxWrapCreateP(void* p, const char* fmt)
         return z;
     } else {
         char pbuf[128];
-        sprintf(pbuf, fmt, p);
+        snprintf(pbuf, sizeof(pbuf), fmt, p);
         return mxCreateString(pbuf);
     }
 }
@@ -347,7 +347,7 @@ mxArray* mxWrapCreateP_single(void* p, const char* fmt)
         return z;
     } else {
         char pbuf[128];
-        sprintf(pbuf, fmt, p);
+        snprintf(pbuf, sizeof(pbuf), fmt, p);
         return mxCreateString(pbuf);
     }
 }
@@ -593,7 +593,7 @@ mxArray* mxWrapCreateP(void* p, const char* fmt)
         return z;
     } else {
         char pbuf[128];
-        sprintf(pbuf, fmt, p);
+        snprintf(pbuf, sizeof(pbuf), fmt, p);
         return mxCreateString(pbuf);
     }
 }
@@ -794,7 +794,7 @@ mxArray* mxWrapCreateP_single(void* p, const char* fmt)
         return z;
     } else {
         char pbuf[128];
-        sprintf(pbuf, fmt, p);
+        snprintf(pbuf, sizeof(pbuf), fmt, p);
         return mxCreateString(pbuf);
     }
 }
