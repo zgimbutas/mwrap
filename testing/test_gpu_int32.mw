@@ -1,0 +1,26 @@
+$void __global__ TimesTwoKernel(int32_t *A,
+$                         int32_t *B,
+$                         int const N)
+${
+$    /* Calculate the global linear index, assuming a 1-d grid. */
+$    int const i = blockDim.x * blockIdx.x + threadIdx.x;
+$    if (i < N) {
+$        B[i] = 2.0 * A[i];
+$    }
+$}
+
+$void TimesTwo(int32_t *A,
+$                         int32_t *B,
+$                         int const N)
+${
+$    int const threadsPerBlock = 256;
+$    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+$    TimesTwoKernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, N);
+$}
+
+
+@function result = timestwo_gpu_int32(a)
+  n = numel(a)
+  # TimesTwo(gpu int32_t[] a, gpu output int32_t[n] result, int n);
+end
+

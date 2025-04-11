@@ -1,0 +1,7 @@
+% test_gpu driver
+
+mexcuda test_gpu.cu
+
+a = ones(7,1,'int32')
+agpu = gpuArray(a)
+timestwo_int32(agpu)

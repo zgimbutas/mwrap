@@ -1,0 +1,14 @@
+$void TimesTwo_cpu(int32_t *A,
+$                         int32_t *B,
+$                         int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++){
+$        B[i] = 2.0 * A[i];
+$    }
+$}
+
+@function result = timestwo_cpu_int32(a)
+  n = numel(a)
+  # TimesTwo_cpu(cpu int32_t[] a, cpu output int32_t[n] result, int n);
+end
