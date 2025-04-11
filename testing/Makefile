@@ -68,6 +68,18 @@ test_include:
 		-m test_include.m test_include.mw
 	$(MEX) test_includemex.cc
 
+test_char_cpp: 
+	mwrap -cppcomplex -mex test_charmex \
+		-c test_charmex.cc \
+		-mb test_char.mw
+	$(MEX) test_charmex.cc
+
+test_char_c99: 
+	mwrap -mex test_charmex \
+		-c test_charmex.c \
+		-mb test_char.mw
+	$(MEX) test_charmex.c
+
 # these last two are tested by test_single.m ...
 test_single_cpp: 
 	../mwrap -cppcomplex -mex test_singlemex \
@@ -94,3 +106,5 @@ clean:
 	rm -f test_singlemex.c test_singlemex.cc
 	rm -f add.m addf.m addz.m addc.m 
 	rm -f arradd.m arraddf.m arraddz.m arraddc.m 
+	rm -f test_charmex.c test_charmex.cc
+	rm -f addchar.m arraddchar.m 

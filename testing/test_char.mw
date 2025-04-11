@@ -1,0 +1,23 @@
+% test char type, scalars and arrays, in mwrap.
+% based on test_single.m, Barnett & Gimbutas 7/5/20-7/20/20.
+
+% make as in Makefile,
+% then pass-fail test in octave/matlab with:
+% test_char.m
+
+% CHAR======================================================
+
+% scalar char.........
+
+$ void addchar(char a, char b, char *c) { *c = a + b; }
+@function c=addchar(a,b)
+# addchar(char a, char b, output char[1]c);
+
+% array char........
+
+$ void arraddchar(char *a, char *b, char *c, int n)
+$ { for (int i=0;i<n;++i) c[i] = a[i] + b[i]; }
+@function c=arraddchar(a,b)
+n = numel(a);
+# arraddchar(char[n] a, char[n] b, output char[n]c, int n);
+
