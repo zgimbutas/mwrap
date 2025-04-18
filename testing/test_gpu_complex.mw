@@ -1,0 +1,26 @@
+$void __global__ TimesTwoKernel(cuDoubleComplex *A,
+$                         cuDoubleComplex *B,
+$                         int const N)
+${
+$    /* Calculate the global linear index, assuming a 1-d grid. */
+$    int const i = blockDim.x * blockIdx.x + threadIdx.x;
+$    if (i < N) {
+$        /* B[i] = make_cuDoubleComplex(2.0,0.0) * A[i]; */
+$        B[i] = cuCmul(make_cuDoubleComplex(2.0,0.0),A[i]);
+$    }
+$}
+
+$void TimesTwo(cuDoubleComplex *A,
+$                         cuDoubleComplex *B,
+$                         int const N)
+${
+$    int const threadsPerBlock = 256;
+$    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+$    TimesTwoKernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, N);
+$}
+
+
+@function result = timestwo_complex(a)
+  n = numel(a)
+  # TimesTwo(gpu dcomplex[] a, gpu output dcomplex[n] result, int n);
+end

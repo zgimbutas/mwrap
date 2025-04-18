@@ -97,6 +97,18 @@ test_single_c99:
 test_gpu:
 	../mwrap -gpu -list -cppcomplex -mb -mex test_gpu -c test_gpu.cu test_gpu.mw
 
+test_gpu_complex:
+	../mwrap -gpu -list -cppcomplex -mb -mex test_gpu_complex -c test_gpu_complex.cu test_gpu_complex.mw
+
+test_gpu_int32:
+	../mwrap -gpu -list -cppcomplex -mb -mex test_gpu_int32 -c test_gpu_int32.cu test_gpu_int32.mw
+
+test_cpu:
+	../mwrap -list -cppcomplex -mb -mex test_cpu -c test_cpu.cc test_cpu.mw
+
+test_cpu_int32:
+	../mwrap -list -cppcomplex -mb -mex test_cpu_int32 -c test_cpu_int32.cc test_cpu_int32.mw
+
 clean:
 	rm -f *~ *.mex* *.o* test_typecheck.log
 	rm -f test_fortran1.m test_fortran2.m test_transfers.m test_catch.m
