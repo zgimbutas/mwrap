@@ -103,6 +103,12 @@ test_gpu_complex:
 test_gpu_int32:
 	../mwrap -gpu -list -cppcomplex -mb -mex test_gpu_int32 -c test_gpu_int32.cu test_gpu_int32.mw
 
+# GPU tests: requires CUDA toolkit and GPU device
+# Run mwrap targets first (test_gpu, test_gpu_complex, test_gpu_int32),
+# then run this target from MATLAB/Octave with GPU support.
+test_all_gpu: test_gpu test_gpu_complex test_gpu_int32
+	matlab -batch "test_all_gpu"
+
 test_cpu:
 	../mwrap -list -cppcomplex -mb -mex test_cpu -c test_cpu.cc test_cpu.mw
 

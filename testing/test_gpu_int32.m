@@ -1,16 +1,15 @@
-% test_gpu driver
-% ../mwrap -gpu -list -cppcomplex -mb -mex test_gpu_int32 -c test_gpu_int32.cu test_gpu_int32.mw
+function test_gpu_int32
+% Test GPU int32 array passing via gpuArray.
+% Requires: CUDA toolkit, mexcuda, GPU device.
+% Run mwrap first:
+%   ../mwrap -gpu -list -cppcomplex -mb -mex test_gpu_int32 -c test_gpu_int32.cu test_gpu_int32.mw
 
 mexcuda test_gpu_int32.cu
 
-a = ones(7,1,'int32')
-agpu = gpuArray(a)
-timestwo_gpu_int32(agpu)
+a = int32((1:7)');
+agpu = gpuArray(a);
+bgpu = timestwo_gpu_int32(agpu);
+b = gather(bgpu);
+assert(norm(double(b) - 2*double(a)) == 0, 'GPU int32 timestwo failed');
 
-% test_cpu driver
-% ../mwrap -list -cppcomplex -mb -mex test_cpu_int32 -c test_cpu_int32.cc test_cpu_int32.mw
-
-mex test_cpu_int32.cc
-
-a = ones(7,1,'int32')
-timestwo_cpu_int32(a)
+fprintf('test_gpu_int32: PASSED\n');
