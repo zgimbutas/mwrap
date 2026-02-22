@@ -109,29 +109,29 @@ Contributors and version history
 MWrap was originally written by David Bindel, c. 2009.
 It was moved to github in c. 2015 in order to add new features, and is now maintained by Zydrunas Gimbutas, Alex Barnett, Libin Lu, Manas Rachh, and Rafael Laboissière.
 
-Version 0.33 (c. 2009)
+**Version 0.33** (c. 2009)
 Author: David Bindel <bindel@cs.cornell.edu>
-    Initial revision, clone David's repository (c. 2015)
+- Initial revision, clone David's repository (c. 2015)
 
-Version 1.0 (c. 2020)
+**Version 1.0** (c. 2020)
 Contributors: Zydrunas Gimbutas, Alex Barnett, Libin Lu.
-    Add support for 64-bit Matlab and gcc-4.6
-    Add support for gcc 7.3+
-    Add support for Matlab R2018a complex interleaved API
-    Add support for C99 int32_t, int64_t, uint32_t, uint64_t
-    Allow single precision Matlab inputs and outputs
+- Add support for 64-bit Matlab and gcc-4.6
+- Add support for gcc 7.3+
+- Add support for Matlab R2018a complex interleaved API
+- Add support for C99 int32_t, int64_t, uint32_t, uint64_t
+- Allow single precision Matlab inputs and outputs
 
-Version 1.1 (2022)
+**Version 1.1** (2022)
 Contributors: Manas Rachh, Zydrunas Gimbutas.
-    Add support for gfortran -fno-underscoring flag
+- Add support for gfortran -fno-underscoring flag
 
-Version 1.2 (2025)
-Contributors:  Libin Lu, Rafael Laboissière, Marco Barbone, Zydrunas Gimbutas.
-    Cope with error verbose directive in both versions 2 and 3 of Bison
-    Add support for Matlab gpuArray
-    Add support for char scalar
-    Add CMake build system and GitHub Actions CI
-    Validate input files before processing to prevent data loss
-    Add zero-copy array passing via cinput/coutput/cinout keywords
+**Version 1.2** (2025)
+Contributors: Libin Lu, Rafael Laboissière, Marco Barbone, Zydrunas Gimbutas.
+- Cope with error verbose directive in both versions 2 and 3 of Bison
+- Add support for Matlab gpuArray
+- Add support for char scalar
+- Add CMake build system and GitHub Actions CI
+- Validate input files before processing to prevent data loss
+- Add zero-copy array passing via cinput/coutput/cinout keywords
 
 Also see https://github.com/zgimbutas/mwrap/tags
