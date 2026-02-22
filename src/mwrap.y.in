@@ -99,6 +99,7 @@ inline void add_func(Func* func)
 %token <string> ID 
 %token <string> NUMBER STRING
 %token <char> INPUT OUTPUT INOUT
+%token <char> CINPUT COUTPUT CINOUT
 %token <char> CPU GPU
 
 %type <func> func funcall
@@ -196,10 +197,13 @@ devicespec:
   | GPU { $$ = 'g'; }
   |     { $$ = 'c'; } ;
 
-iospec: 
+iospec:
   INPUT    { $$ = 'i'; }
   | OUTPUT { $$ = 'o'; }
   | INOUT  { $$ = 'b'; }
+  | CINPUT  { $$ = 'I'; }
+  | COUTPUT { $$ = 'O'; }
+  | CINOUT  { $$ = 'B'; }
   |        { $$ = 'i'; } ;
 
 quals: 
@@ -282,6 +286,9 @@ const char* help_string =
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
 "  -gpu           -- add support code for MATLAB gpuArray\n"
+"\n"
+"IO specifiers: input, output, inout (with copy)\n"
+"               cinput, coutput, cinout (zero-copy, direct pointer)\n"
 "\n";
 
 int main(int argc, char** argv)

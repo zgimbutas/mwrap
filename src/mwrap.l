@@ -207,6 +207,9 @@ extern void get_include_name();
 <CSTATE>"input"   { return INPUT; }
 <CSTATE>"output"  { return OUTPUT; }
 <CSTATE>"inout"   { return INOUT; }
+<CSTATE>"cinput"  { return CINPUT; }
+<CSTATE>"coutput" { return COUTPUT; }
+<CSTATE>"cinout"  { return CINOUT; }
 <CSTATE>"class"   { return CLASS; }
 <CSTATE>"typedef" { return TYPEDEF; }
 <CSTATE>"cpu"     { return CPU; }

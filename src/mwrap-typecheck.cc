@@ -13,6 +13,16 @@
 #include "mwrap-ast.h"
 
 
+/* -- Nocopy iospec helpers -- */
+/*
+ * The nocopy (zero-copy) iospecs 'I', 'O', 'B' have the same
+ * directional semantics as their lowercase counterparts 'i', 'o', 'b'.
+ */
+
+static bool iospec_is_input(char c)  { return c == 'i' || c == 'I' || c == 'b' || c == 'B'; }
+static bool iospec_is_output(char c) { return c == 'o' || c == 'O' || c == 'b' || c == 'B'; }
+static bool iospec_is_inonly(char c) { return c == 'i' || c == 'I'; }
+
 /* -- Label input / output indices -- */
 /*
  * To each argument, we assign an input label (index of the argument
@@ -45,9 +55,9 @@ void label_args(Var* v, int& icount, int& ocount)
 {
     if (!v)
         return;
-    if (v->iospec == 'i' || v->iospec == 'b')
+    if (iospec_is_input(v->iospec))
         v->input_label = icount++;
-    if (v->iospec == 'o' || v->iospec == 'b')
+    if (iospec_is_output(v->iospec))
         v->output_label = ocount++;
     label_args(v->next, icount, ocount);
 }
@@ -304,7 +314,7 @@ int typecheck_args(Var* v, int line)
         return 0;
 
     int err = assign_tinfo(v, line);
-    if (v->iospec == 'i')
+    if (iospec_is_inonly(v->iospec))
         return err + typecheck_args(v->next, line);
 
     if (isdigit(v->name[0])) {
@@ -318,16 +328,16 @@ int typecheck_args(Var* v, int line)
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Object %s cannot be output\n", v->name);
         ++err;
-    } else if ((v->tinfo == VT_array || 
+    } else if ((v->tinfo == VT_array ||
                 v->tinfo == VT_carray ||
                 v->tinfo == VT_zarray ||
-                v->tinfo == VT_rarray) && 
-               v->iospec == 'o' && 
+                v->tinfo == VT_rarray) &&
+               (v->iospec == 'o' || v->iospec == 'O') &&
                !(v->qual && v->qual->args)) {
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Output array %s must have dims\n", v->name);
         ++err;
-    } else if (v->tinfo == VT_rarray && v->iospec != 'o') {
+    } else if (v->tinfo == VT_rarray && !iospec_is_output(v->iospec)) {
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Array ref %s *must* be output\n", v->name);
         ++err;
@@ -344,7 +354,7 @@ int typecheck_args(Var* v, int line)
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "String %s cannot be output without size\n", v->name);
         ++err;
-    } else if (v->tinfo == VT_mx && v->iospec == 'b') {
+    } else if (v->tinfo == VT_mx && (v->iospec == 'b' || v->iospec == 'B')) {
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "mxArray %s cannot be used for inout\n", v->name);
         ++err;

@@ -109,6 +109,9 @@ test_cpu:
 test_cpu_int32:
 	../mwrap -list -cppcomplex -mb -mex test_cpu_int32 -c test_cpu_int32.cc test_cpu_int32.mw
 
+test_nocopy:
+	../mwrap -list -cppcomplex -mb -mex test_nocopy -c test_nocopy.cc test_nocopy.mw
+
 clean:
 	rm -f *~ *.mex* *.o* test_typecheck.log test_syntax.log
 	rm -f test_fortran1.m test_fortran2.m test_transfers.m test_catch.m

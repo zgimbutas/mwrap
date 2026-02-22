@@ -28,9 +28,10 @@ int has_output_args(Var* v)
 {
     if (!v)
         return 0;
-    if (v->iospec == 'o' || v->iospec == 'b')
+    if (v->iospec == 'o' || v->iospec == 'b' ||
+        v->iospec == 'O' || v->iospec == 'B')
         return 1;
-    else 
+    else
         return has_output_args(v->next);
 }
 
@@ -39,7 +40,8 @@ void print_output_args(FILE* fp, Var* v, int& first)
 {
     if (!v)
         return;
-    if (v->iospec == 'o' || v->iospec == 'b') {
+    if (v->iospec == 'o' || v->iospec == 'b' ||
+        v->iospec == 'O' || v->iospec == 'B') {
         if (!first)
             fprintf(fp, ", ");
         fprintf(fp, "%s", v->name);
@@ -55,7 +57,8 @@ void print_input_args(FILE* fp, Var* v)
         return;
     if (v->tinfo == VT_const)
         fprintf(fp, ", 0");
-    else if (v->iospec == 'i' || v->iospec == 'b')
+    else if (v->iospec == 'i' || v->iospec == 'b' ||
+             v->iospec == 'I' || v->iospec == 'B')
         fprintf(fp, ", %s", v->name);
     print_input_args(fp, v->next);
 }
