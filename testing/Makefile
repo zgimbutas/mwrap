@@ -131,4 +131,7 @@ clean:
 	rm -f arradd.m arraddf.m arraddz.m arraddc.m 
 	rm -f test_include.m test_includemex.cc
 	rm -f test_charmex.c test_charmex.cc
-	rm -f addchar.m arraddchar.m 
+	rm -f addchar.m arraddchar.m
+	rm -f test_nocopy.cc nocopy_timestwo_double.m nocopy_timestwo_int32.m nocopy_inplace_double.m
+	rm -f test_cpu.cc timestwo_cpu.m
+	rm -f test_cpu_int32.cc timestwo_cpu_int32.m
