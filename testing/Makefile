@@ -2,7 +2,8 @@ include ../make.inc
 
 all: test_transfers test_cpp_complex $(TESTC99COMPLEX) test_syntax \
 	test_typecheck test_catch test_fortran1 test_fortran2 \
-	test_redirect test_include test_single_cpp test_char_cpp
+	test_redirect test_include test_single_cpp test_char_cpp \
+	test_nocopy
 # run the tests...
 	octave-cli --no-init-file --quiet test_all.m
 
@@ -115,8 +116,10 @@ test_cpu:
 test_cpu_int32:
 	../mwrap -list -cppcomplex -mb -mex test_cpu_int32 -c test_cpu_int32.cc test_cpu_int32.mw
 
+# tested by test_nocopy.m ...
 test_nocopy:
-	../mwrap -list -cppcomplex -mb -mex test_nocopy -c test_nocopy.cc test_nocopy.mw
+	../mwrap -list -cppcomplex -mb -mex test_nocopymex -c test_nocopymex.cc test_nocopy.mw
+	$(MEX) test_nocopymex.cc
 
 clean:
 	rm -f *~ *.mex* *.o* test_typecheck.log test_syntax.log
@@ -132,6 +135,7 @@ clean:
 	rm -f test_include.m test_includemex.cc
 	rm -f test_charmex.c test_charmex.cc
 	rm -f addchar.m arraddchar.m
-	rm -f test_nocopy.cc nocopy_timestwo_double.m nocopy_timestwo_int32.m nocopy_inplace_double.m
+	rm -f test_nocopymex.cc nocopy_timestwo_double.m nocopy_timestwo_float.m nocopy_inplace_double.m
+	rm -f nocopy_timestwo_dcomplex.m nocopy_timestwo_fcomplex.m
 	rm -f test_cpu.cc timestwo_cpu.m
 	rm -f test_cpu_int32.cc timestwo_cpu_int32.m

@@ -77,6 +77,8 @@ const char* basetype_to_mxaccessor(const char* name)
     if (strcmp(name, "int64_t")  == 0) return "mxGetInt64s";
     if (strcmp(name, "uint32_t") == 0) return "mxGetUint32s";
     if (strcmp(name, "uint64_t") == 0) return "mxGetUint64s";
+    if (strcmp(name, "dcomplex") == 0) return "mxGetComplexDoubles";
+    if (strcmp(name, "fcomplex") == 0) return "mxGetComplexSingles";
     return NULL;
 }
 
@@ -841,7 +843,16 @@ void mex_unpack_input_array(FILE* fp, Var* v)
                 "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
                 "        if (mw_err_txt_) goto mw_err_label;\n",
                 v->input_label, mxclassid, mxclassid);
-        if (accessor) {
+        if (accessor && complex_tinfo(v)) {
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "        in%d_ = (%s*) %s(prhs[%d]);\n"
+                    "#else\n"
+                    "        mw_err_txt_ = \"Zero-copy complex arrays require interleaved complex (MX_HAS_INTERLEAVED_COMPLEX)\";\n"
+                    "        goto mw_err_label;\n"
+                    "#endif\n",
+                    v->input_label, v->basetype, accessor, v->input_label);
+        } else if (accessor) {
             fprintf(fp,
                     "#if MX_HAS_INTERLEAVED_COMPLEX\n"
                     "        in%d_ = (%s*) %s(prhs[%d]);\n"
@@ -1120,7 +1131,16 @@ void mex_alloc_output(FILE* fp, Var* v, bool return_flag)
                 mex_alloc_size(fp, e);
                 fprintf(fp, ", 1, %s, %s);\n", mxclassid, mtype);
             }
-            if (accessor) {
+            if (accessor && complex_tinfo(v)) {
+                fprintf(fp,
+                        "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                        "    out%d_ = (%s*) %s(plhs[%d]);\n"
+                        "#else\n"
+                        "    mw_err_txt_ = \"Zero-copy complex arrays require interleaved complex (MX_HAS_INTERLEAVED_COMPLEX)\";\n"
+                        "    goto mw_err_label;\n"
+                        "#endif\n",
+                        v->output_label, v->basetype, accessor, v->output_label);
+            } else if (accessor) {
                 fprintf(fp,
                         "#if MX_HAS_INTERLEAVED_COMPLEX\n"
                         "    out%d_ = (%s*) %s(plhs[%d]);\n"
@@ -1383,7 +1403,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 
     /* Nocopy inout: pass through input to output */
     if (v->iospec == 'B' && v->devicespec != 'g') {
-        fprintf(fp, "    plhs[%d] = prhs[%d];\n",
+        fprintf(fp, "    plhs[%d] = (mxArray*)prhs[%d];\n",
                 v->output_label, v->input_label);
         return;
     }

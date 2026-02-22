@@ -227,6 +227,15 @@ if(MWRAP_COMPILE_MEX AND MWRAP_MEX_BACKENDS)
   )
   list(APPEND _mwrap_testing_generators test_char_cpp)
 
+  mwrap_add_mex(test_nocopy
+    WORK_DIR "${_mwrap_testing_binary_dir}"
+    MEX_NAME test_nocopymex
+    CC_FILENAME test_nocopymex.cc
+    MW_FILES "${_mwrap_testing_source_dir}/test_nocopy.mw"
+    MWRAP_FLAGS -list -cppcomplex -mb
+  )
+  list(APPEND _mwrap_testing_generators test_nocopy)
+
   set(_mwrap_testing_mex_targets)
   foreach(_mwrap_generator IN LISTS _mwrap_testing_generators)
     _mwrap_compile_mex(${_mwrap_generator} OUTPUT_VAR _mwrap_generator_mex_targets)

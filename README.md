@@ -125,7 +125,7 @@ Contributors: Zydrunas Gimbutas, Alex Barnett, Libin Lu.
 Contributors: Manas Rachh, Zydrunas Gimbutas.
 - Add support for gfortran -fno-underscoring flag
 
-**Version 1.2** (2025)
+**Version 1.2** (2025-2026)
 Contributors: Libin Lu, Rafael Laboissière, Marco Barbone, Zydrunas Gimbutas.
 - Cope with error verbose directive in both versions 2 and 3 of Bison
 - Add support for Matlab gpuArray
