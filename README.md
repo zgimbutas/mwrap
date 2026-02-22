@@ -132,6 +132,7 @@ Contributors: Libin Lu, Rafael Laboissière, Marco Barbone, Zydrunas Gimbutas.
 - Add support for char scalar
 - Add CMake build system and GitHub Actions CI
 - Validate input files before processing to prevent data loss
+- Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add zero-copy array passing via cinput/coutput/cinout keywords
 
 Also see https://github.com/zgimbutas/mwrap/tags

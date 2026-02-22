@@ -1851,6 +1851,8 @@ void print_mex_init(FILE* fp)
 void print_mex_file(FILE* fp, Func* f)
 {
 
+    if (mw_use_int32_t || mw_use_int64_t || mw_use_uint32_t || mw_use_uint64_t)
+        fprintf(fp, "#include <stdint.h>\n\n");
     mex_define_copiers(fp);
     mex_casting_getters(fp);
 
