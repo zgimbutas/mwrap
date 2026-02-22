@@ -253,11 +253,13 @@ variable.
              & {\tt new} {\it class-id}
 \vspace{5mm} \\
   args       & arg {\tt ,} arg {\tt ,} $\ldots$ \gOR\ $\epsilon$ \\
-  arg        & iospec type {\it var-id} \\
-             & ispec  type {\it value} \\
-  returnvar  & type {\it var-id} 
+  arg        & devicespec iospec type {\it var-id} \\
+             & devicespec ispec  type {\it value} \\
+  returnvar  & type {\it var-id}
 \vspace{5mm} \\
-  iospec     & {\tt input} \gOR\ {\tt output} \gOR\ {\tt inout} \gOR\ 
+  devicespec & {\tt cpu} \gOR\ {\tt gpu} \gOR\ $\epsilon$ \\
+  iospec     & {\tt input} \gOR\ {\tt output} \gOR\ {\tt inout} \gOR\
+               {\tt cinput} \gOR\ {\tt coutput} \gOR\ {\tt cinout} \gOR\
                $\epsilon$ \\
   ispec      & {\tt input} \gOR\ $\epsilon$ \\
   type       & {\it type-id} \gOR 
@@ -528,6 +530,108 @@ for {\tt char} types and forces type checking. An error {\tt 'Invalid
 mismatched Matlab variable is detected during runtime. The user is
 expected to perform the required type conversions manually using {\tt
   char} MATLAB command.
+
+
+\subsection{Zero-copy array passing ({\tt cinput}, {\tt coutput}, {\tt cinout})}
+\label{nocopy-section}
+
+By default, \mwrap\ copies array data between MATLAB's internal
+storage and temporary C buffers.  For numeric types whose MATLAB
+class matches the C type exactly (e.g.\ {\tt double} to {\tt
+  mxDOUBLE\_CLASS}, {\tt float} to {\tt mxSINGLE\_CLASS}), this copy
+is unnecessary and can be avoided using the zero-copy keywords {\tt
+  cinput}, {\tt coutput}, and {\tt cinout}.  These provide direct
+pointer access to the underlying MATLAB array data without any
+intermediate allocation or copy.
+
+\begin{itemize}
+\item {\tt cinput} --- provides a read-only direct pointer to the
+  input array data.  The MATLAB class of the input is validated at
+  runtime; a mismatch produces an error such as {\tt 'Invalid array
+    argument, mxDOUBLE\_CLASS expected'}.
+
+\item {\tt coutput} --- allocates the output {\tt mxArray} directly
+  (via {\tt mxCreateNumericMatrix}) and provides a writable pointer
+  into it.  No temporary buffer is used and no copy-back is needed.
+  The output dimensions must be specified explicitly, as with ordinary
+  {\tt output} arrays.
+
+\item {\tt cinout} --- combines {\tt cinput} and {\tt coutput}: the
+  input array pointer is used directly and the same {\tt mxArray} is
+  returned as output ({\tt plhs[i] = prhs[j]}).  The C function
+  modifies the data in-place.  Note that this bypasses MATLAB's
+  copy-on-write semantics, so the caller should not rely on the
+  original variable remaining unmodified.
+\end{itemize}
+
+The following types are supported for zero-copy access:
+\begin{center}
+\begin{tabular}{lll}
+  C type       & MATLAB class       & Accessor \\
+  \hline
+  {\tt double}    & {\tt mxDOUBLE\_CLASS} & {\tt mxGetDoubles} \\
+  {\tt float}     & {\tt mxSINGLE\_CLASS} & {\tt mxGetSingles} \\
+  {\tt int32\_t}  & {\tt mxINT32\_CLASS}  & {\tt mxGetInt32s} \\
+  {\tt int64\_t}  & {\tt mxINT64\_CLASS}  & {\tt mxGetInt64s} \\
+  {\tt uint32\_t} & {\tt mxUINT32\_CLASS} & {\tt mxGetUint32s} \\
+  {\tt uint64\_t} & {\tt mxUINT64\_CLASS} & {\tt mxGetUint64s} \\
+  {\tt dcomplex}  & {\tt mxDOUBLE\_CLASS} (complex) & {\tt mxGetComplexDoubles} \\
+  {\tt fcomplex}  & {\tt mxSINGLE\_CLASS} (complex) & {\tt mxGetComplexSingles} \\
+\end{tabular}
+\end{center}
+Types without an unambiguous MATLAB class mapping ({\tt int}, {\tt
+  long}, etc.) cannot be used with these keywords; use {\tt -i8} to
+promote to fixed-width types, or explicitly use {\tt int32\_t}/{\tt
+  int64\_t}.
+
+Complex zero-copy ({\tt dcomplex}, {\tt fcomplex}) requires
+interleaved complex storage, available in MATLAB R2018a and later when
+compiled with {\tt -R2018a}.  On systems that use split-complex
+storage (older MATLAB, or GNU Octave versions without interleaved
+complex support), a runtime error is emitted.
+
+Example usage:
+\begin{verbatim}
+$[
+  void scale_array(const double* in, double* out, int n) {
+      for (int i = 0; i < n; ++i) out[i] = 2.0 * in[i];
+  }
+$]
+
+@function y = scale(x)
+  n = numel(x);
+  # scale_array(cinput double[n] x, coutput double[n] y, int n);
+\end{verbatim}
+
+
+\subsection{GPU array passing}
+\label{gpu-section}
+
+When the {\tt -gpu} flag is specified, \mwrap\ adds support for
+MATLAB {\tt gpuArray} objects.  The {\tt gpu} device specifier can be
+placed before the usual {\tt input}, {\tt output}, or {\tt inout}
+keywords to indicate that an array argument resides on the GPU:
+\begin{verbatim}
+  # func(gpu input double[n] x, gpu output double[n] y, int n);
+\end{verbatim}
+
+For GPU input arrays, \mwrap\ verifies that the argument is a {\tt
+  gpuArray}, then obtains a read-only device pointer via {\tt
+  mxGPUGetDataReadOnly}.  For GPU output arrays, \mwrap\ creates a
+new {\tt mxGPUArray} with {\tt mxGPUCreateGPUArray} and obtains a
+writable device pointer via {\tt mxGPUGetData}.  For GPU inout
+arrays, the input device pointer is reused and the same {\tt
+  mxGPUArray} is returned as output.
+
+The {\tt gpu} specifier may be freely combined with ordinary (CPU)
+arguments in the same function call, allowing mixed host/device
+interfaces.  The {\tt -gpu} flag causes \mwrap\ to emit {\tt
+  \#include <gpu/mxGPUArray.h>} and a call to {\tt mxInitGPU()} in
+the MEX initialization code.  The MEX file must be compiled with
+MATLAB's GPU-enabled {\tt mex} compiler ({\tt nvmex} or {\tt mex}
+with CUDA support).
+
+The default device specifier is {\tt cpu}, which can be omitted.
 
 
 \section{Example}
