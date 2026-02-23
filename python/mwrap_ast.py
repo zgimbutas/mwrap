@@ -1,5 +1,11 @@
 """
 mwrap_ast.py — AST nodes, type registries, and helpers for mwrap.
+
+Copyright (c) 2007-2008  David Bindel
+See the file COPYING for copying permissions
+
+Converted to Python by Zydrunas Gimbutas (2026),
+with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
 """
 
 from enum import IntEnum

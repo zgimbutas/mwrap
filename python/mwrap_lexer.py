@@ -1,12 +1,11 @@
 """
 mwrap_lexer.py — Line-oriented lexer for .mw files.
 
-Processes input line-by-line.  Lines starting with '#' are tokenised into
-keyword / ID / NUMBER / STRING / PUNCT tokens.  Other line prefixes
-('$', '@function', '@include', '@', '//', text) are handled as side-effects
-(writing to C output, MATLAB output, or managing the file stack).
+Copyright (c) 2007-2008  David Bindel
+See the file COPYING for copying permissions
 
-Only '#' lines produce tokens that the parser consumes.
+Converted to Python by Zydrunas Gimbutas (2026),
+with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
 """
 
 import re

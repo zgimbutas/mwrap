@@ -1,10 +1,11 @@
 """
 mwrap_mgen.py — MATLAB stub generator.
 
-Each call is translated to MATLAB code of the form:
+Copyright (c) 2007-2008  David Bindel
+See the file COPYING for copying permissions
 
-    mex_id_ = N;
-    [result1, result2, ...] = mexfunc(mex_id_, in1, ..., dim1, dim2, ...);
+Converted to Python by Zydrunas Gimbutas (2026),
+with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
 """
 
 from mwrap_ast import VT

@@ -1,6 +1,11 @@
 """
-mwrap_typecheck.py — Semantic analysis: label assignment, VT classification,
-                     validation, and Fortran argument conversion.
+mwrap_typecheck.py — Semantic analysis and type classification.
+
+Copyright (c) 2007-2008  David Bindel
+See the file COPYING for copying permissions
+
+Converted to Python by Zydrunas Gimbutas (2026),
+with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
 """
 
 import sys

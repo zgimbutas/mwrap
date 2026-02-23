@@ -1,8 +1,11 @@
 """
 mwrap_parser.py — Recursive descent parser for mwrap .mw files.
 
-Consumes tokens from mwrap_lexer, builds AST nodes, runs typecheck,
-emits MATLAB stubs, and accumulates a list of Func nodes.
+Copyright (c) 2007-2008  David Bindel
+See the file COPYING for copying permissions
+
+Converted to Python by Zydrunas Gimbutas (2026),
+with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
 """
 
 import sys
