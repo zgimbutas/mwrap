@@ -101,6 +101,8 @@ David Bindel's user's guide (`mwrap.pdf`) describes MWrap in detail; you can als
 
 Alex Barnett also maintains a set of minimally complete tutorial examples of calling C/Fortran libraries (including OpenMP) from MATLAB/Octave, using MWrap, at https://github.com/ahbarnett/mwrapdemo
 
+The `mwrap.1` man page was written by Nicolas Bourdaud.
+
 
 Contributors and version history
 --------------------------------
