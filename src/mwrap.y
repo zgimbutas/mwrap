@@ -270,7 +270,7 @@ const char* usage_string =
 "Try 'mwrap --help' for more information.\n";
 
 const char* help_string =
-"mwrap 1.2 - MEX file generator for MATLAB and Octave\n"
+"mwrap 1.3 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"

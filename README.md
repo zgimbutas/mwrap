@@ -2,10 +2,12 @@ MWrap
 =====
 
 MWrap is an interface generation system in the spirit of SWIG or matwrap.
-From a set of augmented MATLAB script files, MWrap will generate a MEX gateway to desired C/C++/Fortran function calls and MATLAB function files to access that gateway.
+From a set of augmented MATLAB script files, it generates a MEX gateway to desired C/C++/Fortran function calls and MATLAB function files to access that gateway, hiding the details of converting to and from MATLAB's data structures and of allocating and freeing temporary storage.
+It is also compatible with modern Octave via `mkoctfile --mex`.
 It makes wrapping C/C++/Fortran from MATLAB almost pleasant!
-The details of converting to and from MATLAB's data structures, and of
-allocating and freeing temporary storage, are hidden from the user. It is also compatible with modern Octave via `mkoctfile --mex`.
+
+MWrap was created by David Bindel, who hosts his old version
+at https://www.cs.cornell.edu/~bindel/sw/mwrap
 
 Dependencies
 ------------
@@ -14,7 +16,7 @@ Building MWrap requires the following tools:
 
 * A C compiler with C99 support and a C++ compiler with C++11 support
 * [Bison](https://www.gnu.org/software/bison/) and [Flex](https://github.com/westes/flex)
-* [CMake](https://cmake.org/) 3.16 or newer (for the CMake build path)
+* (Optional) [CMake](https://cmake.org/) 3.16 or newer (for the CMake build path)
 * (Optional) [MATLAB](https://www.mathworks.com/products/matlab.html) with MEX build tooling when compiling wrappers with CMake
 
 If you are using a Debian or Ubuntu based system, the required packages can be
@@ -24,10 +26,17 @@ installed via
 sudo apt-get install build-essential bison flex cmake
 ```
 
+Makefile build
+--------------
+
+Edit `make.inc` and then run `make`.  The output will be a
+standalone executable (`mwrap`) in the main directory.  Bison and Flex are
+required for this build path.
+
 CMake build
 -----------
 
-Create a build directory and run CMake:
+Alternatively, create a build directory and run CMake:
 
 ```
 mkdir -p build
@@ -84,16 +93,6 @@ sources that your project requires.  Optional flags such as
 `MWRAP_ENABLE_MATLAB_CLASSDEF` remain available while configuring the
 examples.
 
-Makefile build
---------------
-
-Alternatively, edit `make.inc` and then run `make`.  The output will be a
-standalone executable (`mwrap`) in the main directory.  Bison and Flex are
-required for this build path.
-
-It was created by David Bindel, who hosts his old version
-at https://www.cs.cornell.edu/~bindel/sw/mwrap
-
 
 Example usage
 -------------
@@ -107,7 +106,7 @@ Contributors and version history
 --------------------------------
 
 MWrap was originally written by David Bindel, c. 2009.
-It was moved to github in c. 2015 in order to add new features, and is now maintained by Zydrunas Gimbutas, Alex Barnett, Libin Lu, Manas Rachh, and Rafael Laboissière.
+It was moved to github in c. 2015 in order to add new features, and is now maintained by Zydrunas Gimbutas, Alex Barnett, Libin Lu, Manas Rachh, Rafael Laboissière, and Marco Barbone.
 
 **Version 0.33** (c. 2009)
 Author: David Bindel <bindel@cs.cornell.edu>
@@ -125,14 +124,20 @@ Contributors: Zydrunas Gimbutas, Alex Barnett, Libin Lu.
 Contributors: Manas Rachh, Zydrunas Gimbutas.
 - Add support for gfortran -fno-underscoring flag
 
-**Version 1.2** (2025-2026)
-Contributors: Libin Lu, Rafael Laboissière, Marco Barbone, Zydrunas Gimbutas.
+**Version 1.2** (2025)
+Contributors: Libin Lu, Rafael Laboissière, Zydrunas Gimbutas.
 - Cope with error verbose directive in both versions 2 and 3 of Bison
 - Add support for Matlab gpuArray
 - Add support for char scalar
+
+**Version 1.3** (2026)
+Contributors: Marco Barbone, Zydrunas Gimbutas.
 - Add CMake build system and GitHub Actions CI
 - Validate input files before processing to prevent data loss
-- Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add zero-copy array passing via cinput/coutput/cinout keywords
+- Optimize MEX dispatch with integer ID + function pointer table
+- Graceful fallback for nocopy complex arrays without interleaved complex
+- Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
+- Add Python mwrap implementation
 
 Also see https://github.com/zgimbutas/mwrap/tags
