@@ -387,7 +387,7 @@ tassert(norm(xy-[1;2]) == 0, 'Output array');
 tassert(norm(xy_z-[1+3i;2]) == 0, 'Output array');
 
 fmt = '= %d'; i = 101;
-# sprintf(output cstring[128] buf, input cstring fmt, input int i);
+# snprintf(output cstring[128] buf, input int 128, input cstring fmt, input int i);
 tassert(strcmp('= 101', buf), 'Output string');
 
 $ void test_output_p_scalar(int* i) { *i = 202; }
