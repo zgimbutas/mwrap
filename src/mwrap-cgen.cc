@@ -847,11 +847,22 @@ void mex_unpack_input_array(FILE* fp, Var* v)
             fprintf(fp,
                     "#if MX_HAS_INTERLEAVED_COMPLEX\n"
                     "        in%d_ = (%s*) %s(prhs[%d]);\n"
-                    "#else\n"
-                    "        mw_err_txt_ = \"Zero-copy complex arrays require interleaved complex (MX_HAS_INTERLEAVED_COMPLEX)\";\n"
-                    "        goto mw_err_label;\n"
-                    "#endif\n",
+                    "#else\n",
                     v->input_label, v->basetype, accessor, v->input_label);
+            fprintf(fp,
+                    "        mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
+                    "            \"Zero-copy complex requires interleaved complex; falling back to copy\");\n");
+            if (strcmp(v->basetype, "fcomplex") == 0)
+                fprintf(fp,
+                    "        in%d_ = mxWrapGetArray_single_%s(prhs[%d], &mw_err_txt_);\n",
+                    v->input_label, v->basetype, v->input_label);
+            else
+                fprintf(fp,
+                    "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n",
+                    v->input_label, v->basetype, v->input_label);
+            fprintf(fp,
+                    "        if (mw_err_txt_) goto mw_err_label;\n"
+                    "#endif\n");
         } else if (accessor) {
             fprintf(fp,
                     "#if MX_HAS_INTERLEAVED_COMPLEX\n"
@@ -1122,37 +1133,56 @@ void mex_alloc_output(FILE* fp, Var* v, bool return_flag)
             const char* mxclassid = basetype_to_mxclassid(v->basetype);
             const char* accessor  = basetype_to_mxaccessor(v->basetype);
             const char* mtype = complex_tinfo(v) ? "mxCOMPLEX" : "mxREAL";
-            if (e && e->next && !e->next->next) {
-                fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
-                        v->output_label, e->input_label, e->next->input_label, mxclassid, mtype);
-            } else if (e) {
-                fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(",
-                        v->output_label);
-                mex_alloc_size(fp, e);
-                fprintf(fp, ", 1, %s, %s);\n", mxclassid, mtype);
-            }
             if (accessor && complex_tinfo(v)) {
+                /* Complex nocopy output: zero-copy with copy fallback */
+                fprintf(fp, "#if MX_HAS_INTERLEAVED_COMPLEX\n");
+                if (e && e->next && !e->next->next) {
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
+                            v->output_label, e->input_label, e->next->input_label, mxclassid, mtype);
+                } else if (e) {
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(",
+                            v->output_label);
+                    mex_alloc_size(fp, e);
+                    fprintf(fp, ", 1, %s, %s);\n", mxclassid, mtype);
+                }
                 fprintf(fp,
-                        "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                        "    out%d_ = (%s*) %s(plhs[%d]);\n"
-                        "#else\n"
-                        "    mw_err_txt_ = \"Zero-copy complex arrays require interleaved complex (MX_HAS_INTERLEAVED_COMPLEX)\";\n"
-                        "    goto mw_err_label;\n"
-                        "#endif\n",
+                        "    out%d_ = (%s*) %s(plhs[%d]);\n",
                         v->output_label, v->basetype, accessor, v->output_label);
-            } else if (accessor) {
+                fprintf(fp, "#else\n");
                 fprintf(fp,
-                        "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                        "    out%d_ = (%s*) %s(plhs[%d]);\n"
-                        "#else\n"
-                        "    out%d_ = (%s*) mxGetData(plhs[%d]);\n"
-                        "#endif\n",
-                        v->output_label, v->basetype, accessor, v->output_label,
-                        v->output_label, v->basetype, v->output_label);
+                        "    mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
+                        "        \"Zero-copy complex requires interleaved complex; falling back to copy\");\n");
+                if (e) {
+                    fprintf(fp, "    out%d_ = (%s*) mxMalloc(", v->output_label, v->basetype);
+                    mex_alloc_size(fp, e);
+                    fprintf(fp, "*sizeof(%s));\n", v->basetype);
+                }
+                fprintf(fp, "#endif\n");
             } else {
-                fprintf(fp,
-                        "    out%d_ = (%s*) mxGetData(plhs[%d]);\n",
-                        v->output_label, v->basetype, v->output_label);
+                /* Non-complex nocopy output */
+                if (e && e->next && !e->next->next) {
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
+                            v->output_label, e->input_label, e->next->input_label, mxclassid, mtype);
+                } else if (e) {
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(",
+                            v->output_label);
+                    mex_alloc_size(fp, e);
+                    fprintf(fp, ", 1, %s, %s);\n", mxclassid, mtype);
+                }
+                if (accessor) {
+                    fprintf(fp,
+                            "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                            "    out%d_ = (%s*) %s(plhs[%d]);\n"
+                            "#else\n"
+                            "    out%d_ = (%s*) mxGetData(plhs[%d]);\n"
+                            "#endif\n",
+                            v->output_label, v->basetype, accessor, v->output_label,
+                            v->output_label, v->basetype, v->output_label);
+                } else {
+                    fprintf(fp,
+                            "    out%d_ = (%s*) mxGetData(plhs[%d]);\n",
+                            v->output_label, v->basetype, v->output_label);
+                }
             }
         }
     } else if (v->iospec == 'o') {
@@ -1397,15 +1427,35 @@ void mex_make_stmt(FILE* fp, Func* f)
 
 void mex_marshal_array(FILE* fp, Var* v)
 {
+    bool nocopy_complex_fallback = false;
+
     /* Nocopy output: plhs was already set during allocation */
-    if (v->iospec == 'O' && v->devicespec != 'g')
-        return;
+    if (v->iospec == 'O' && v->devicespec != 'g') {
+        if (complex_tinfo(v)) {
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "    /* nocopy: plhs already set during allocation */\n"
+                    "#else\n");
+            nocopy_complex_fallback = true;
+        } else {
+            return;
+        }
+    }
 
     /* Nocopy inout: pass through input to output */
     if (v->iospec == 'B' && v->devicespec != 'g') {
-        fprintf(fp, "    plhs[%d] = (mxArray*)prhs[%d];\n",
-                v->output_label, v->input_label);
-        return;
+        if (complex_tinfo(v)) {
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "    plhs[%d] = (mxArray*)prhs[%d];\n"
+                    "#else\n",
+                    v->output_label, v->input_label);
+            nocopy_complex_fallback = true;
+        } else {
+            fprintf(fp, "    plhs[%d] = (mxArray*)prhs[%d];\n",
+                    v->output_label, v->input_label);
+            return;
+        }
     }
 
     if (v->devicespec != 'g'){
@@ -1520,6 +1570,9 @@ void mex_marshal_array(FILE* fp, Var* v)
     }
     }
 
+    if (nocopy_complex_fallback)
+        fprintf(fp, "#endif\n");
+
     if (v->devicespec == 'g'){
         if (v->iospec == 'b') {
             fprintf(fp, "    plhs[%d] = prhs[%d];\n", v->output_label, v->input_label);
@@ -1615,7 +1668,18 @@ void mex_dealloc(FILE* fp, Var* v, bool return_flag)
     if (v->devicespec != 'g'){
     /* Nocopy arrays: pointers are MATLAB-owned, no deallocation */
     if (is_nocopy(v->iospec)) {
-        /* skip mxFree for nocopy iospecs */
+        if (complex_tinfo(v)) {
+            /* Complex nocopy: free the copy in non-interleaved fallback */
+            fprintf(fp, "#ifndef MX_HAS_INTERLEAVED_COMPLEX\n");
+            if (v->iospec == 'O')
+                fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
+                        v->output_label, v->output_label);
+            else
+                fprintf(fp, "    if (in%d_)  mxFree(in%d_);\n",
+                        v->input_label, v->input_label);
+            fprintf(fp, "#endif\n");
+        }
+        /* else: non-complex nocopy, no dealloc needed */
     } else if (is_array(v->tinfo) || v->tinfo == VT_string) {
         if (v->iospec == 'o')
             fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
