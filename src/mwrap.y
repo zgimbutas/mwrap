@@ -110,7 +110,7 @@ inline void add_func(Func* func)
 %type <expr> arrayspec exprs exprrest expr
 %type <inherits> inheritslist inheritsrest
 
-@ERROR_VERBOSE@
+%error-verbose
 
 %%
 statements: statement statements | ;
