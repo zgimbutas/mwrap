@@ -85,7 +85,7 @@ void print_dimension_args(FILE* fp, Var* v)
 
 void print_matlab_call(FILE* fp, Func* f, const char* mexfunc)
 {
-    fprintf(fp, "mex_id_ = '%s';\n", id_string(f).c_str());
+    fprintf(fp, "mex_id_ = %d;\n", f->id);
     if (f->ret || has_output_args(f->args)) {
         int first = 1;
         fprintf(fp, "[");
