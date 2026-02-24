@@ -264,7 +264,7 @@ def _mex_casting_getter(fp, cname, inherits):
            "    if (mxGetClassID(a) == mxDOUBLE_CLASS &&\n"
            "        mxGetM(a)*mxGetN(a) == 1 &&\n"
            "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-           "        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)\n"
+           "        ((mxIsComplex(a) ? ((*mxGetComplexDoubles(a)).real == 0 && (*mxGetComplexDoubles(a)).imag == 0) : *mxGetDoubles(a) == 0)\n"
            "#else\n"
            "        *mxGetPr(a) == 0\n"
            "#endif\n"
@@ -799,7 +799,8 @@ def _marshal_result(fp, ctx, v, return_flag):
                      VT.p_cscalar, VT.p_zscalar):
         _interleaved_branch(fp,
             f"    plhs[{ol}] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
-            f"    *mxGetComplexDoubles(plhs[{ol}]) = {n};\n",
+            f"    mxGetComplexDoubles(plhs[{ol}])->real = real_{bt}({n});\n"
+            f"    mxGetComplexDoubles(plhs[{ol}])->imag = imag_{bt}({n});\n",
             f"    plhs[{ol}] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
             f"    *mxGetPr(plhs[{ol}]) = real_{bt}({n});\n"
             f"    *mxGetPi(plhs[{ol}]) = imag_{bt}({n});\n")

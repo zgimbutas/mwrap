@@ -474,7 +474,7 @@ void mex_casting_getter(FILE* fp, const char* cname,
             "    if (mxGetClassID(a) == mxDOUBLE_CLASS &&\n"
             "        mxGetM(a)*mxGetN(a) == 1 &&\n"
             "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-	    "        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)\n"
+	    "        ((mxIsComplex(a) ? ((*mxGetComplexDoubles(a)).real == 0 && (*mxGetComplexDoubles(a)).imag == 0) : *mxGetDoubles(a) == 0)\n"
 	    "#else\n"
 	    "        *mxGetPr(a) == 0\n"
 	    "#endif\n"
@@ -1434,14 +1434,16 @@ void mex_marshal_result(FILE* fp, Var* v, bool return_flag)
         fprintf(fp,
 		"#if MX_HAS_INTERLEAVED_COMPLEX\n"
                 "    plhs[%d] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
-                "    *mxGetComplexDoubles(plhs[%d]) = %s;\n"
+                "    mxGetComplexDoubles(plhs[%d])->real = real_%s(%s);\n"
+                "    mxGetComplexDoubles(plhs[%d])->imag = imag_%s(%s);\n"
 		"#else\n"
                 "    plhs[%d] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
                 "    *mxGetPr(plhs[%d]) = real_%s(%s);\n"
                 "    *mxGetPi(plhs[%d]) = imag_%s(%s);\n"
 		"#endif\n",
                 v->output_label,
-                v->output_label, vname(v, namebuf),
+                v->output_label, v->basetype, vname(v, namebuf),
+                v->output_label, v->basetype, vname(v, namebuf),
                 v->output_label,
                 v->output_label, v->basetype, vname(v, namebuf),
                 v->output_label, v->basetype, vname(v, namebuf));

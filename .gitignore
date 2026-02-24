@@ -22,3 +22,5 @@ testing/test_fortran2mex.c
 testing/test_include.m
 testing/test_includemex.cc
 testing/test_syntax.log
+
+__pycache__/
