@@ -231,19 +231,8 @@ function(_mwrap_compile_mex target_name)
       endif()
 
       set(mex_target "${target_name}_mex")
-      matlab_add_mex(NAME ${mex_target} SRC ${mex_sources} OUTPUT_NAME "${mex_name}" R2018a)
+      matlab_add_mex(NAME ${mex_target} SRC ${mex_sources} OUTPUT_NAME "${mex_name}")
       add_dependencies(${mex_target} ${target_name})
-
-      # Apple's new linker (Xcode 15+) does not handle the -U flags that
-      # matlab_add_mex emits for mexCreateMexFunction & friends.  Fall back
-      # to the classic linker when it is available.
-      if(APPLE)
-        include(CheckLinkerFlag)
-        check_linker_flag(CXX "-Wl,-ld_classic" _MWRAP_HAS_LD_CLASSIC)
-        if(_MWRAP_HAS_LD_CLASSIC)
-          target_link_options(${mex_target} PRIVATE "LINKER:-ld_classic")
-        endif()
-      endif()
 
       if(include_dirs)
         target_include_directories(${mex_target} PRIVATE ${include_dirs})
