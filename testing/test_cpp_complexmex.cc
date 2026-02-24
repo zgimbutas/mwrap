@@ -1114,7 +1114,8 @@ void mexStub1(int nlhs, mxArray* plhs[],
     out0_ = zsum(in0_, in1_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_dcomplex(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_dcomplex(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_dcomplex(out0_);
@@ -1149,7 +1150,8 @@ void mexStub2(int nlhs, mxArray* plhs[],
     out0_ = conj(in0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_dcomplex(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_dcomplex(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_dcomplex(out0_);

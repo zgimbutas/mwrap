@@ -1286,7 +1286,7 @@ Pair* mxWrapGetP_Pair(const mxArray* a, const char** e)
     if (mxGetClassID(a) == mxDOUBLE_CLASS &&
         mxGetM(a)*mxGetN(a) == 1 &&
 #if MX_HAS_INTERLEAVED_COMPLEX
-        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)
+        ((mxIsComplex(a) ? ((*mxGetComplexDoubles(a)).real == 0 && (*mxGetComplexDoubles(a)).imag == 0) : *mxGetDoubles(a) == 0))
 #else
         *mxGetPr(a) == 0
 #endif
@@ -1324,7 +1324,7 @@ Parent1* mxWrapGetP_Parent1(const mxArray* a, const char** e)
     if (mxGetClassID(a) == mxDOUBLE_CLASS &&
         mxGetM(a)*mxGetN(a) == 1 &&
 #if MX_HAS_INTERLEAVED_COMPLEX
-        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)
+        ((mxIsComplex(a) ? ((*mxGetComplexDoubles(a)).real == 0 && (*mxGetComplexDoubles(a)).imag == 0) : *mxGetDoubles(a) == 0))
 #else
         *mxGetPr(a) == 0
 #endif
@@ -1362,7 +1362,7 @@ Parent2* mxWrapGetP_Parent2(const mxArray* a, const char** e)
     if (mxGetClassID(a) == mxDOUBLE_CLASS &&
         mxGetM(a)*mxGetN(a) == 1 &&
 #if MX_HAS_INTERLEAVED_COMPLEX
-        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)
+        ((mxIsComplex(a) ? ((*mxGetComplexDoubles(a)).real == 0 && (*mxGetComplexDoubles(a)).imag == 0) : *mxGetDoubles(a) == 0))
 #else
         *mxGetPr(a) == 0
 #endif
@@ -2002,7 +2002,8 @@ void mexStub21(int nlhs, mxArray* plhs[],
     out0_ = zsum(in0_, in1_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -2578,7 +2579,8 @@ void mexStub42(int nlhs, mxArray* plhs[],
     out0_ = test_return_zscalar(in0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -2800,7 +2802,8 @@ void mexStub52(int nlhs, mxArray* plhs[],
     out0_ = test_return_r_zscalar(in0_, in1_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -2974,7 +2977,8 @@ void mexStub60(int nlhs, mxArray* plhs[],
     out0_ = test_input_zarray(in0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -3045,7 +3049,8 @@ void mexStub63(int nlhs, mxArray* plhs[],
     out0_ = test_input_zscalar(in0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -3180,7 +3185,8 @@ void mexStub68(int nlhs, mxArray* plhs[],
     out0_ = test_input_p_zscalar(&in0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -3286,7 +3292,8 @@ void mexStub72(int nlhs, mxArray* plhs[],
     out0_ = test_input_r_zscalar(in0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -3530,7 +3537,8 @@ void mexStub82(int nlhs, mxArray* plhs[],
     test_output_p_zscalar(&out0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
@@ -3585,7 +3593,8 @@ void mexStub84(int nlhs, mxArray* plhs[],
     test_output_r_zscalar(out0_);
 #if MX_HAS_INTERLEAVED_COMPLEX
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
-    *mxGetComplexDoubles(plhs[0]) = out0_;
+    mxGetComplexDoubles(plhs[0])->real = real_cmplx(out0_);
+    mxGetComplexDoubles(plhs[0])->imag = imag_cmplx(out0_);
 #else
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);
     *mxGetPr(plhs[0]) = real_cmplx(out0_);
