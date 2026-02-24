@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mwrap — MEX file generator for MATLAB and Octave.
+mwrap — MEX/oct-file generator for MATLAB and Octave.
 
 Copyright (c) 2007-2008  David Bindel
 See the file COPYING for copying permissions
@@ -22,29 +22,32 @@ from mwrap_ast import MwrapContext
 from mwrap_lexer import Lexer
 from mwrap_parser import Parser
 from mwrap_cgen import print_mex_init, print_mex_file
+from mwrap_octgen import print_oct_init, print_oct_file
 
 
 HELP_STRING = """\
-mwrap 1.3 - MEX file generator for MATLAB and Octave
+mwrap 1.4 - MEX/oct-file generator for MATLAB and Octave
 
 Syntax:
-  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]
-        [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu] infile1 infile2 ...
+  mwrap [-mex outputmex | -oct outputoct] [-m output.m] [-c output.c]
+        [-mb] [-list] [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu]
+        infile1 infile2 ...
 
-  -mex outputmex -- specify the MATLAB mex function name
+  -mex outputmex -- generate MEX gateway (default)
+  -oct outputoct -- generate Octave oct-file gateway
   -m output.m    -- generate the MATLAB stub called output.m
-  -c outputmex.c -- generate the C file outputmex.c
+  -c output.c    -- generate the C/C++ file
   -mb            -- generate .m files specified with @ redirections
   -list          -- list files specified with @ redirections
   -catch         -- generate C++ exception handling code
   -i8            -- convert int, long, uint, ulong to int64_t, uint64_t
   -c99complex    -- add support code for C99 complex types
   -cppcomplex    -- add support code for C++ complex types
-  -gpu           -- add support code for MATLAB gpuArray
+  -gpu           -- add support code for MATLAB gpuArray (MEX only)
 """
 
 USAGE_STRING = """\
-Usage: mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] infile1 ...
+Usage: mwrap [-mex outputmex | -oct outputoct] [-m output.m] [-c output.c] infile1 ...
 Try 'mwrap --help' for more information.
 """
 
@@ -56,6 +59,13 @@ def _load_support():
         return f.read()
 
 
+def _load_oct_support():
+    """Load the runtime support header for oct-files."""
+    support_path = os.path.join(_script_dir, "mwrap_oct_support.h")
+    with open(support_path, "r") as f:
+        return f.read()
+
+
 def _build_parser():
     """Build the argparse argument parser."""
     p = argparse.ArgumentParser(add_help=False)
@@ -63,6 +73,7 @@ def _build_parser():
     p.add_argument('-m', dest='mfile')
     p.add_argument('-c', dest='cfile')
     p.add_argument('-mex', dest='mexfunc', default='mexfunction')
+    p.add_argument('-oct', dest='octfunc')
     p.add_argument('-mb', action='store_true', dest='mbatching')
     p.add_argument('-list', action='store_true', dest='listing')
     p.add_argument('-catch', action='store_true', dest='catch_')
@@ -89,6 +100,11 @@ def main():
         sys.stderr.write(HELP_STRING)
         return 0
 
+    # Determine backend mode
+    oct_mode = args.octfunc is not None
+    # If -oct was given, the user explicitly chose oct-file mode
+    # If -mex was given (or default), use MEX mode
+
     if args.catch_:
         ctx.mw_generate_catch = True
     if args.i8:
@@ -98,6 +114,9 @@ def main():
     if args.cppcomplex:
         ctx.mw_use_cpp_complex = True
     if args.gpu:
+        if oct_mode:
+            sys.stderr.write("Error: -gpu is not supported with -oct (oct-files do not support GPU arrays)\n")
+            return 1
         ctx.mw_use_gpu = True
 
     if ctx.mw_use_c99_complex or ctx.mw_use_cpp_complex:
@@ -117,13 +136,14 @@ def main():
         outcfp = open(args.cfile, "w")
 
     # --- Create lexer and parser ---
+    gateway_name = args.octfunc if oct_mode else args.mexfunc
     lexer = Lexer(outfp=outfp, outcfp=outcfp,
                   mbatching_flag=args.mbatching,
                   listing_flag=args.listing)
-    parser = Parser(lexer, ctx, mexfunc=args.mexfunc)
+    parser = Parser(lexer, ctx, mexfunc=gateway_name)
 
     err_flag = 0
-    emitted_mex_init = False
+    emitted_init = False
 
     for infile in args.input_files:
         lexer.linenum = 1
@@ -138,10 +158,14 @@ def main():
 
         lexer.current_ifname = infile
 
-        if outcfp and not emitted_mex_init:
-            support_text = _load_support()
-            print_mex_init(outcfp, ctx, support_text)
-            emitted_mex_init = True
+        if outcfp and not emitted_init:
+            if oct_mode:
+                support_text = _load_oct_support()
+                print_oct_init(outcfp, ctx, support_text)
+            else:
+                support_text = _load_support()
+                print_mex_init(outcfp, ctx, support_text)
+            emitted_init = True
 
         for tok in lexer.lex_file(infile):
             parser.feed(tok)
@@ -150,9 +174,12 @@ def main():
         err_flag += parser.err_flag
         parser.err_flag = 0
 
-    # --- Generate C output ---
+    # --- Generate C/C++ output ---
     if not err_flag and outcfp:
-        print_mex_file(outcfp, ctx, parser.funcs)
+        if oct_mode:
+            print_oct_file(outcfp, ctx, parser.funcs, args.octfunc)
+        else:
+            print_mex_file(outcfp, ctx, parser.funcs)
 
     if outfp:
         outfp.close()
