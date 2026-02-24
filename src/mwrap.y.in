@@ -20,6 +20,7 @@ extern "C" {
 
 using std::string;
 
+bool  mw_oct_mode = false;        // Oct-file mode?
 bool  mw_use_gpu = 0;         // Use GPU?
 bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
@@ -44,6 +45,7 @@ static int    func_id = 0;              // Assign stub numbers
 static Func*  funcs   = 0;              // AST - linked list of functions
 static Func*  lastfunc = 0;             // Last link in funcs list
 static const char*  mexfunc = "mexfunction";  // Name of mex function
+static const char*  octfunc = NULL;               // Name of oct function
 static string current_ifname;           // Current input file name
 
 
@@ -263,16 +265,20 @@ char* mwrap_strdup(const char* s)
 
 const char* usage_string =
 "Usage: mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] infile1 ...\n"
+"       mwrap [-oct octfunc] [-m output.m] [-c output.cc] infile1 ...\n"
 "Try 'mwrap --help' for more information.\n";
 
 const char* help_string =
-"mwrap 1.3 - MEX file generator for MATLAB and Octave\n"
+"mwrap 1.4 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"
 "        [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu] infile1 infile2 ...\n"
+"  mwrap [-oct octfunc] [-m output.m] [-c output.cc] [-mb] [-list]\n"
+"        [-catch] [-i8] [-cppcomplex] infile1 infile2 ...\n"
 "\n"
 "  -mex outputmex -- specify the MATLAB mex function name\n"
+"  -oct octfunc   -- generate Octave oct-file (DEFUN_DLD) instead of MEX\n"
 "  -m output.m    -- generate the MATLAB stub called output.m\n"
 "  -c outputmex.c -- generate the C file outputmex.c\n"
 "  -mb            -- generate .m files specified with @ redirections\n"
@@ -309,6 +315,10 @@ int main(int argc, char** argv)
                 cfile = argv[++j];
             else if (strcmp(argv[j], "-mex") == 0 && j+1 < argc)
                 mexfunc = argv[++j];
+            else if (strcmp(argv[j], "-oct") == 0 && j+1 < argc) {
+                octfunc = argv[++j];
+                mw_oct_mode = true;
+            }
             else if (strcmp(argv[j], "-mb") == 0)
                 mbatching_flag = 1;
             else if (strcmp(argv[j], "-list") == 0)
@@ -325,6 +335,11 @@ int main(int argc, char** argv)
                 mw_use_gpu = true;
         }
 
+        if (mw_oct_mode && mw_use_gpu) {
+            fprintf(stderr, "Error: -oct and -gpu cannot be used together\n");
+            return 1;
+        }
+
         if (mw_use_c99_complex || mw_use_cpp_complex) {
             add_zscalar_type("dcomplex");
             add_cscalar_type("fcomplex");
@@ -335,7 +350,8 @@ int main(int argc, char** argv)
         for (j = 1; j < argc; ++j) {
             if (strcmp(argv[j], "-m") == 0 ||
                 strcmp(argv[j], "-c") == 0 ||
-                strcmp(argv[j], "-mex") == 0)
+                strcmp(argv[j], "-mex") == 0 ||
+                strcmp(argv[j], "-oct") == 0)
                 ++j;
             else if (strcmp(argv[j], "--help") == 0 ||
                      strcmp(argv[j], "-mb") == 0 ||
@@ -364,7 +380,8 @@ int main(int argc, char** argv)
         for (j = 1; j < argc; ++j) {
             if (strcmp(argv[j], "-m") == 0 ||
                 strcmp(argv[j], "-c") == 0 ||
-                strcmp(argv[j], "-mex") == 0)
+                strcmp(argv[j], "-mex") == 0 ||
+                strcmp(argv[j], "-oct") == 0)
                 ++j;
             else if (strcmp(argv[j], "-mb") == 0 ||
                      strcmp(argv[j], "-list") == 0 ||
@@ -381,7 +398,10 @@ int main(int argc, char** argv)
                 if (yyin) {
                     current_ifname = argv[j];
                     if (outcfp && !emitted_mex_init) {
-                        print_mex_init(outcfp);
+                        if (mw_oct_mode)
+                            print_oct_init(outcfp);
+                        else
+                            print_mex_init(outcfp);
                         emitted_mex_init = true;
                     }
                     err_flag += yyparse();
@@ -396,8 +416,12 @@ int main(int argc, char** argv)
             }
         }
     }
-    if (!err_flag && outcfp)
-        print_mex_file(outcfp, funcs);
+    if (!err_flag && outcfp) {
+        if (mw_oct_mode)
+            print_oct_file(outcfp, funcs, octfunc);
+        else
+            print_mex_file(outcfp, funcs);
+    }
     destroy(funcs);
     destroy_inherits();
     if (outfp)

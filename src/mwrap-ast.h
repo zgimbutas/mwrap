@@ -131,13 +131,25 @@ void print_matlab_call(FILE* fp, Func* func, const char* mexfunc);
 void print_mex_init(FILE* fp);
 void print_mex_file(FILE* fp, Func* f);
 
+void print_oct_init(FILE* fp);
+void print_oct_file(FILE* fp, Func* f, const char* octfunc);
+
 void mex_c99_complex(FILE* fp);
 void mex_cpp_complex(FILE* fp);
+
+bool is_array(int tinfo);
+bool is_obj(int tinfo);
+bool complex_tinfo(Var* v);
+bool nullable_return(Func* f);
+const char* vname(Var* v, char* buf);
+bool has_fortran(Func* f);
+int max_routine_id(Func* f);
 
 void destroy(Func* func);
 void destroy(InheritsDecl* ilist);
 void destroy_inherits();
 
+extern bool mw_oct_mode;
 extern bool mw_use_gpu;
 extern bool mw_generate_catch;
 extern bool mw_use_c99_complex;

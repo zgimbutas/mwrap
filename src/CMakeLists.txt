@@ -21,11 +21,28 @@ add_custom_command(
 set_source_files_properties(${MWRAP_SUPPORT_HEADER} PROPERTIES GENERATED TRUE)
 add_custom_target(mwrap_support_header DEPENDS ${MWRAP_SUPPORT_HEADER})
 
+set(MWRAP_OCT_SUPPORT_HEADER ${CMAKE_CURRENT_BINARY_DIR}/mwrap-oct-support.h)
+add_custom_command(
+  OUTPUT ${MWRAP_OCT_SUPPORT_HEADER}
+  COMMAND ${CMAKE_COMMAND}
+          -DSTRINGIFY=$<TARGET_FILE:stringify>
+          -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/mwrap-oct-support.c
+          -DOUTPUT=${MWRAP_OCT_SUPPORT_HEADER}
+          -DNAME=oct_header
+          -P ${PROJECT_SOURCE_DIR}/cmake/run_stringify.cmake
+  DEPENDS stringify ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-oct-support.c
+  COMMENT "Generating mwrap-oct-support.h"
+  VERBATIM
+)
+set_source_files_properties(${MWRAP_OCT_SUPPORT_HEADER} PROPERTIES GENERATED TRUE)
+add_custom_target(mwrap_oct_support_header DEPENDS ${MWRAP_OCT_SUPPORT_HEADER})
+
 set(MWRAP_HANDWRITTEN_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-ast.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-typecheck.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-cgen.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-mgen.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-octgen.cc
 )
 set(MWRAP_HANDWRITTEN_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-ast.h
@@ -73,8 +90,9 @@ add_executable(mwrap
   ${MWRAP_HANDWRITTEN_SOURCES}
   ${MWRAP_GENERATED_SOURCES}
   ${MWRAP_SUPPORT_HEADER}
+  ${MWRAP_OCT_SUPPORT_HEADER}
 )
-add_dependencies(mwrap mwrap_support_header)
+add_dependencies(mwrap mwrap_support_header mwrap_oct_support_header)
 
 target_sources(mwrap PRIVATE ${MWRAP_HANDWRITTEN_HEADERS} ${MWRAP_GENERATED_HEADERS})
 
