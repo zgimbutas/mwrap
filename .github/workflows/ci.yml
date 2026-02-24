@@ -126,3 +126,28 @@ jobs:
 
       - name: Run Octave example tests
         run: ctest --test-dir build-octave --output-on-failure -R '^octave-'
+
+  python-tests:
+    name: Python mwrap tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            bison \
+            flex \
+            zlib1g-dev
+
+      - name: Build C++ mwrap
+        run: |
+          cmake -S . -B build
+          cmake --build build --target mwrap
+
+      - name: Run Python tests
+        run: bash testing/test_python.sh build/src/mwrap python/mwrap
