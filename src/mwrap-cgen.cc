@@ -46,44 +46,6 @@ char *basetype_to_mxclassid(const char* name)
 
 
 /*
- * Check whether an iospec requests zero-copy (nocopy) access
- */
-bool is_nocopy(char iospec)
-{
-    return (iospec == 'I' || iospec == 'O' || iospec == 'B');
-}
-
-/*
- * Return the base direction character for an iospec
- */
-char iospec_dir(char iospec)
-{
-    switch (iospec) {
-        case 'I': return 'i';
-        case 'O': return 'o';
-        case 'B': return 'b';
-        default:  return iospec;
-    }
-}
-
-/*
- * Map basetype to typed MATLAB data accessor (R2018a+ interleaved API)
- */
-const char* basetype_to_mxaccessor(const char* name)
-{
-    if (strcmp(name, "double")   == 0) return "mxGetDoubles";
-    if (strcmp(name, "float")    == 0) return "mxGetSingles";
-    if (strcmp(name, "int32_t")  == 0) return "mxGetInt32s";
-    if (strcmp(name, "int64_t")  == 0) return "mxGetInt64s";
-    if (strcmp(name, "uint32_t") == 0) return "mxGetUint32s";
-    if (strcmp(name, "uint64_t") == 0) return "mxGetUint64s";
-    if (strcmp(name, "dcomplex") == 0) return "mxGetComplexDoubles";
-    if (strcmp(name, "fcomplex") == 0) return "mxGetComplexSingles";
-    return NULL;
-}
-
-
-/*
  * Check whether a tinfo is an array type
  */
 bool is_array(int tinfo)
@@ -121,7 +83,7 @@ bool nullable_return(Func* f)
  */
 const char* vname(Var* v, char* buf)
 {
-    if (v->iospec == 'o' || v->iospec == 'O')
+    if (v->iospec == 'o')
         sprintf(buf, "out%d_", v->output_label);
     else
         sprintf(buf, "in%d_", v->input_label);
@@ -606,9 +568,9 @@ void mex_declare_type(char* typebuf, Var* v)
         sprintf(typebuf, "%s", v->basetype);
     else if (v->tinfo == VT_string)
         sprintf(typebuf, "char*");
-    else if (v->tinfo == VT_mx && iospec_dir(v->iospec) == 'i')
+    else if (v->tinfo == VT_mx && v->iospec == 'i')
         sprintf(typebuf, "const mxArray*");
-    else if (v->tinfo == VT_mx && iospec_dir(v->iospec) == 'o')
+    else if (v->tinfo == VT_mx && v->iospec == 'o')
         sprintf(typebuf, "mxArray*");
     else {
         fprintf(stderr, "v->tinfo == %d; v->name = %s\n", v->tinfo, v->name);
@@ -621,7 +583,7 @@ void mex_declare_in_args(FILE* fp, Var* v)
 {
     if (!v)
         return;
-    if (iospec_dir(v->iospec) != 'o' && v->tinfo != VT_const) {
+    if (v->iospec != 'o' && v->tinfo != VT_const) {
         char typebuf[128];
         mex_declare_type(typebuf, v);
         if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
@@ -644,7 +606,7 @@ void mex_declare_out_args(FILE* fp, Var* v)
 {
     if (!v)
         return;
-    if ((v->iospec == 'o' || v->iospec == 'O') && v->tinfo != VT_mx) {
+    if (v->iospec == 'o' && v->tinfo != VT_mx) {
         char typebuf[128];
         mex_declare_type(typebuf, v);
         if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
@@ -759,7 +721,7 @@ void mex_check_dims(FILE* fp, Var* v)
 {
     if (!v)
         return;
-    if (iospec_dir(v->iospec) != 'o' && is_array(v->tinfo) && v->qual && v->qual->args && v->devicespec != 'g') {
+    if (v->iospec != 'o' && is_array(v->tinfo) && v->qual && v->qual->args && v->devicespec != 'g') {
         Expr* a = v->qual->args;
         if (a->next) {
             fprintf(fp,
@@ -832,58 +794,6 @@ void mex_alloc_size(FILE* fp, Expr* e)
 
 void mex_unpack_input_array(FILE* fp, Var* v)
 {
-    /* Nocopy (zero-copy) path for cinput / cinout arrays */
-    if (v->devicespec != 'g' && is_nocopy(v->iospec)) {
-        const char* mxclassid = basetype_to_mxclassid(v->basetype);
-        const char* accessor  = basetype_to_mxaccessor(v->basetype);
-        fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n",
-                v->input_label, v->input_label);
-        fprintf(fp,
-                "        if( mxGetClassID(prhs[%d]) != %s )\n"
-                "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
-                "        if (mw_err_txt_) goto mw_err_label;\n",
-                v->input_label, mxclassid, mxclassid);
-        if (accessor && complex_tinfo(v)) {
-            fprintf(fp,
-                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                    "        in%d_ = (%s*) %s(prhs[%d]);\n"
-                    "#else\n",
-                    v->input_label, v->basetype, accessor, v->input_label);
-            fprintf(fp,
-                    "        mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
-                    "            \"Zero-copy complex requires interleaved complex; falling back to copy\");\n");
-            if (strcmp(v->basetype, "fcomplex") == 0)
-                fprintf(fp,
-                    "        in%d_ = mxWrapGetArray_single_%s(prhs[%d], &mw_err_txt_);\n",
-                    v->input_label, v->basetype, v->input_label);
-            else
-                fprintf(fp,
-                    "        in%d_ = mxWrapGetArray_%s(prhs[%d], &mw_err_txt_);\n",
-                    v->input_label, v->basetype, v->input_label);
-            fprintf(fp,
-                    "        if (mw_err_txt_) goto mw_err_label;\n"
-                    "#endif\n");
-        } else if (accessor) {
-            fprintf(fp,
-                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                    "        in%d_ = (%s*) %s(prhs[%d]);\n"
-                    "#else\n"
-                    "        in%d_ = (%s*) mxGetData(prhs[%d]);\n"
-                    "#endif\n",
-                    v->input_label, v->basetype, accessor, v->input_label,
-                    v->input_label, v->basetype, v->input_label);
-        } else {
-            fprintf(fp,
-                    "        in%d_ = (%s*) mxGetData(prhs[%d]);\n",
-                    v->input_label, v->basetype, v->input_label);
-        }
-        fprintf(fp,
-                "    } else\n"
-                "        in%d_ = NULL;\n\n",
-                v->input_label);
-        return;
-    }
-
     if (v->devicespec != 'g'){
     fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n",
             v->input_label, v->input_label);
@@ -1000,7 +910,7 @@ void mex_unpack_inputs(FILE* fp, Var* v)
 {
     if (!v)
         return;
-    if (v->iospec == 'o' || v->iospec == 'O') {
+    if (v->iospec == 'o') {
         mex_unpack_inputs(fp, v->next);
         return;
     }
@@ -1097,7 +1007,7 @@ void mex_check_inputs(FILE* fp, Var* v)
 {
     if (!v)
         return;
-    if (iospec_dir(v->iospec) != 'o' && (v->tinfo == VT_obj || v->tinfo == VT_r_obj))
+    if (v->iospec != 'o' && (v->tinfo == VT_obj || v->tinfo == VT_r_obj))
         fprintf(fp,
                 "    if (!in%d_) {\n"
                 "        mw_err_txt_ = \"Argument %s cannot be null\";\n"
@@ -1126,66 +1036,7 @@ void mex_alloc_output(FILE* fp, Var* v, bool return_flag)
 {
     if (!v)
         return;
-    if (v->iospec == 'O') {
-        /* Nocopy output: allocate mxArray directly and get writable pointer */
-        if (v->devicespec != 'g' && is_array(v->tinfo)) {
-            Expr* e = v->qual->args;
-            const char* mxclassid = basetype_to_mxclassid(v->basetype);
-            const char* accessor  = basetype_to_mxaccessor(v->basetype);
-            const char* mtype = complex_tinfo(v) ? "mxCOMPLEX" : "mxREAL";
-            if (accessor && complex_tinfo(v)) {
-                /* Complex nocopy output: zero-copy with copy fallback */
-                fprintf(fp, "#if MX_HAS_INTERLEAVED_COMPLEX\n");
-                if (e && e->next && !e->next->next) {
-                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
-                            v->output_label, e->input_label, e->next->input_label, mxclassid, mtype);
-                } else if (e) {
-                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(",
-                            v->output_label);
-                    mex_alloc_size(fp, e);
-                    fprintf(fp, ", 1, %s, %s);\n", mxclassid, mtype);
-                }
-                fprintf(fp,
-                        "    out%d_ = (%s*) %s(plhs[%d]);\n",
-                        v->output_label, v->basetype, accessor, v->output_label);
-                fprintf(fp, "#else\n");
-                fprintf(fp,
-                        "    mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
-                        "        \"Zero-copy complex requires interleaved complex; falling back to copy\");\n");
-                if (e) {
-                    fprintf(fp, "    out%d_ = (%s*) mxMalloc(", v->output_label, v->basetype);
-                    mex_alloc_size(fp, e);
-                    fprintf(fp, "*sizeof(%s));\n", v->basetype);
-                }
-                fprintf(fp, "#endif\n");
-            } else {
-                /* Non-complex nocopy output */
-                if (e && e->next && !e->next->next) {
-                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
-                            v->output_label, e->input_label, e->next->input_label, mxclassid, mtype);
-                } else if (e) {
-                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(",
-                            v->output_label);
-                    mex_alloc_size(fp, e);
-                    fprintf(fp, ", 1, %s, %s);\n", mxclassid, mtype);
-                }
-                if (accessor) {
-                    fprintf(fp,
-                            "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                            "    out%d_ = (%s*) %s(plhs[%d]);\n"
-                            "#else\n"
-                            "    out%d_ = (%s*) mxGetData(plhs[%d]);\n"
-                            "#endif\n",
-                            v->output_label, v->basetype, accessor, v->output_label,
-                            v->output_label, v->basetype, v->output_label);
-                } else {
-                    fprintf(fp,
-                            "    out%d_ = (%s*) mxGetData(plhs[%d]);\n",
-                            v->output_label, v->basetype, v->output_label);
-                }
-            }
-        }
-    } else if (v->iospec == 'o') {
+    if (v->iospec == 'o') {
         if (v->devicespec != 'g'){
         if (!return_flag && is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
             fprintf(fp, "    out%d_ = mxWrapAlloc_%s();\n",
@@ -1275,7 +1126,7 @@ void mex_make_call(FILE* fp, Var* v, int first)
     char namebuf[128];
     if (v->tinfo == VT_obj || v->tinfo == VT_r_obj)
         fprintf(fp, "*%s", vname(v, namebuf));
-    else if (v->tinfo == VT_mx && iospec_dir(v->iospec) == 'o')
+    else if (v->tinfo == VT_mx && v->iospec == 'o')
         fprintf(fp, "plhs+%d", v->output_label);
     else if (v->tinfo == VT_p_scalar ||
              v->tinfo == VT_p_cscalar ||
@@ -1427,37 +1278,6 @@ void mex_make_stmt(FILE* fp, Func* f)
 
 void mex_marshal_array(FILE* fp, Var* v)
 {
-    bool nocopy_complex_fallback = false;
-
-    /* Nocopy output: plhs was already set during allocation */
-    if (v->iospec == 'O' && v->devicespec != 'g') {
-        if (complex_tinfo(v)) {
-            fprintf(fp,
-                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                    "    /* nocopy: plhs already set during allocation */\n"
-                    "#else\n");
-            nocopy_complex_fallback = true;
-        } else {
-            return;
-        }
-    }
-
-    /* Nocopy inout: pass through input to output */
-    if (v->iospec == 'B' && v->devicespec != 'g') {
-        if (complex_tinfo(v)) {
-            fprintf(fp,
-                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                    "    plhs[%d] = (mxArray*)prhs[%d];\n"
-                    "#else\n",
-                    v->output_label, v->input_label);
-            nocopy_complex_fallback = true;
-        } else {
-            fprintf(fp, "    plhs[%d] = (mxArray*)prhs[%d];\n",
-                    v->output_label, v->input_label);
-            return;
-        }
-    }
-
     if (v->devicespec != 'g'){
     Expr* e = v->qual->args;
     char namebuf[128];
@@ -1570,9 +1390,6 @@ void mex_marshal_array(FILE* fp, Var* v)
     }
     }
 
-    if (nocopy_complex_fallback)
-        fprintf(fp, "#endif\n");
-
     if (v->devicespec == 'g'){
         if (v->iospec == 'b') {
             fprintf(fp, "    plhs[%d] = prhs[%d];\n", v->output_label, v->input_label);
@@ -1638,7 +1455,7 @@ void mex_marshal_results(FILE* fp, Var* v, bool return_flag)
 {
     if (!v)
         return;
-    if (iospec_dir(v->iospec) != 'i')
+    if (v->iospec != 'i')
         mex_marshal_result(fp, v, return_flag);
     mex_marshal_results(fp, v->next, return_flag);
 }
@@ -1666,21 +1483,7 @@ void mex_dealloc(FILE* fp, Var* v, bool return_flag)
         return;
 
     if (v->devicespec != 'g'){
-    /* Nocopy arrays: pointers are MATLAB-owned, no deallocation */
-    if (is_nocopy(v->iospec)) {
-        if (complex_tinfo(v)) {
-            /* Complex nocopy: free the copy in non-interleaved fallback */
-            fprintf(fp, "#ifndef MX_HAS_INTERLEAVED_COMPLEX\n");
-            if (v->iospec == 'O')
-                fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
-                        v->output_label, v->output_label);
-            else
-                fprintf(fp, "    if (in%d_)  mxFree(in%d_);\n",
-                        v->input_label, v->input_label);
-            fprintf(fp, "#endif\n");
-        }
-        /* else: non-complex nocopy, no dealloc needed */
-    } else if (is_array(v->tinfo) || v->tinfo == VT_string) {
+    if (is_array(v->tinfo) || v->tinfo == VT_string) {
         if (v->iospec == 'o')
             fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
                     v->output_label, v->output_label);

@@ -136,9 +136,7 @@ Contributors: Libin Lu, Rafael Laboissière, Zydrunas Gimbutas.
 Contributors: Marco Barbone, Zydrunas Gimbutas.
 - Add CMake build system and GitHub Actions CI
 - Validate input files before processing to prevent data loss
-- Add zero-copy array passing via cinput/coutput/cinout keywords
 - Optimize MEX dispatch with integer ID + function pointer table
-- Graceful fallback for nocopy complex arrays without interleaved complex
 - Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add Python mwrap implementation
 

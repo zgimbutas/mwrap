@@ -44,15 +44,9 @@ class VT(IntEnum):
 # iospec / VT classification helpers (single source of truth)
 # ---------------------------------------------------------------------------
 
-def iospec_is_input(c):   return c in ('i', 'I', 'b', 'B')
-def iospec_is_output(c):  return c in ('o', 'O', 'b', 'B')
-def iospec_is_inonly(c):  return c in ('i', 'I')
-
-def is_nocopy(iospec):
-    return iospec in ('I', 'O', 'B')
-
-def iospec_dir(iospec):
-    return {'I': 'i', 'O': 'o', 'B': 'b'}.get(iospec, iospec)
+def iospec_is_input(c):   return c in ('i', 'b')
+def iospec_is_output(c):  return c in ('o', 'b')
+def iospec_is_inonly(c):  return c == 'i'
 
 def is_array(tinfo):
     return tinfo in (VT.array, VT.carray, VT.zarray)
@@ -91,7 +85,7 @@ class TypeQual:
 @dataclass
 class Var:
     devicespec: str    # 'c' (cpu) or 'g' (gpu)
-    iospec: str        # 'i','o','b','I','O','B'
+    iospec: str        # 'i','o','b'
     basetype: str
     qual: Optional[TypeQual]
     name: str
@@ -246,10 +240,6 @@ def _id_var_single(ctx, v: Var) -> str:
     io = v.iospec
     if io == 'i':   name += "i "
     elif io == 'o': name += "o "
-    elif io == 'b': name += "io "
-    elif io == 'I': name += "I "
-    elif io == 'O': name += "O "
-    elif io == 'B': name += "IO "
     else:           name += "io "
 
     name += promote_int(ctx, v.basetype)
@@ -298,8 +288,7 @@ def _print_devicespec(v):
 
 
 def _print_iospec(v):
-    m = {'o': "output ", 'b': "inout ",
-         'I': "cinput ", 'O': "coutput ", 'B': "cinout "}
+    m = {'o': "output ", 'b': "inout "}
     return m.get(v.iospec, "")
 
 

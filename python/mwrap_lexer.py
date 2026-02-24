@@ -25,9 +25,6 @@ class TokenType(Enum):
     INPUT     = auto()
     OUTPUT    = auto()
     INOUT     = auto()
-    CINPUT    = auto()
-    COUTPUT   = auto()
-    CINOUT    = auto()
     CLASS     = auto()
     TYPEDEF   = auto()
     CPU       = auto()
@@ -43,9 +40,6 @@ KEYWORDS = {
     "input":    TokenType.INPUT,
     "output":   TokenType.OUTPUT,
     "inout":    TokenType.INOUT,
-    "cinput":   TokenType.CINPUT,
-    "coutput":  TokenType.COUTPUT,
-    "cinout":   TokenType.CINOUT,
     "class":    TokenType.CLASS,
     "typedef":  TokenType.TYPEDEF,
     "cpu":      TokenType.CPU,

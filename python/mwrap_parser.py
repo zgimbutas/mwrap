@@ -360,9 +360,6 @@ class Parser:
             TokenType.INPUT:   'i',
             TokenType.OUTPUT:  'o',
             TokenType.INOUT:   'b',
-            TokenType.CINPUT:  'I',
-            TokenType.COUTPUT: 'O',
-            TokenType.CINOUT:  'B',
         }
         if tok.type in m:
             self._advance()

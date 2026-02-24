@@ -210,12 +210,6 @@ void print_iospec(FILE* fp, Var* v)
         fprintf(fp, "output ");
     else if (v->iospec == 'b')
         fprintf(fp, "inout ");
-    else if (v->iospec == 'I')
-        fprintf(fp, "cinput ");
-    else if (v->iospec == 'O')
-        fprintf(fp, "coutput ");
-    else if (v->iospec == 'B')
-        fprintf(fp, "cinout ");
 }
 
 
@@ -300,14 +294,6 @@ string id_string(Var* v)
         name += "i ";
     else if (v->iospec == 'o')
         name += "o ";
-    else if (v->iospec == 'b')
-        name += "io ";
-    else if (v->iospec == 'I')
-        name += "I ";
-    else if (v->iospec == 'O')
-        name += "O ";
-    else if (v->iospec == 'B')
-        name += "IO ";
     else
         name += "io ";
     name += promote_int(v->basetype);

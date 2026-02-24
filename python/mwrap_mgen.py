@@ -13,7 +13,7 @@ from mwrap_ast import VT
 
 def _output_arg_names(args):
     """Collect names of output/inout arguments."""
-    return [v.name for v in args if v.iospec in ('o', 'b', 'O', 'B')]
+    return [v.name for v in args if v.iospec in ('o', 'b')]
 
 
 def _input_arg_strs(args):
@@ -22,7 +22,7 @@ def _input_arg_strs(args):
     for v in args:
         if v.tinfo == VT.const:
             parts.append(", 0")
-        elif v.iospec in ('i', 'b', 'I', 'B'):
+        elif v.iospec in ('i', 'b'):
             parts.append(f", {v.name}")
     return parts
 

@@ -207,7 +207,7 @@ def _typecheck_args(ctx, args, line):
                   file=sys.stderr)
             err += 1
         elif (v.tinfo in (VT.array, VT.carray, VT.zarray, VT.rarray) and
-              v.iospec in ('o', 'O') and
+              v.iospec == 'o' and
               not (v.qual and v.qual.args)):
             print(f"Error ({line}): Output array {v.name} must have dims",
                   file=sys.stderr)
@@ -228,7 +228,7 @@ def _typecheck_args(ctx, args, line):
             print(f"Error ({line}): String {v.name} cannot be output without size",
                   file=sys.stderr)
             err += 1
-        elif v.tinfo == VT.mx and v.iospec in ('b', 'B'):
+        elif v.tinfo == VT.mx and v.iospec == 'b':
             print(f"Error ({line}): mxArray {v.name} cannot be used for inout",
                   file=sys.stderr)
             err += 1

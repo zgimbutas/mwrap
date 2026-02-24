@@ -3,9 +3,7 @@ Recent updates:
 Version 1.3 (Feb 23, 2026):
 Added CMake build system and GitHub Actions CI
 Validate input files before processing to prevent data loss
-Added zero-copy array passing via cinput/coutput/cinout keywords
 Optimized MEX dispatch with integer ID + function pointer table
-Graceful fallback for nocopy complex arrays without interleaved complex
 Added #include <stdint.h> for int64_t/uint64_t on Windows msys2/mingw64
 Added Python mwrap implementation
 

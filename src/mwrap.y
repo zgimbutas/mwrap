@@ -99,7 +99,6 @@ inline void add_func(Func* func)
 %token <string> ID 
 %token <string> NUMBER STRING
 %token <char> INPUT OUTPUT INOUT
-%token <char> CINPUT COUTPUT CINOUT
 %token <char> CPU GPU
 
 %type <func> func funcall
@@ -201,9 +200,6 @@ iospec:
   INPUT    { $$ = 'i'; }
   | OUTPUT { $$ = 'o'; }
   | INOUT  { $$ = 'b'; }
-  | CINPUT  { $$ = 'I'; }
-  | COUTPUT { $$ = 'O'; }
-  | CINOUT  { $$ = 'B'; }
   |        { $$ = 'i'; } ;
 
 quals: 
