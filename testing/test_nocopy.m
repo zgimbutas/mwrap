@@ -41,6 +41,13 @@ catch ME
   assert(~isempty(strfind(ME.message, 'mxSINGLE_CLASS expected')));
 end
 
+% cinout float[] ...............................................................
+cf = single((1:5)');
+cf_orig = cf + single(0);  % force copy
+df = nocopy_inplace_float(cf);
+assert(norm(double(df) - 3*double(cf_orig)) < tols, 'nocopy inplace float failed');
+assert(strcmp(class(df), 'single'), 'nocopy inplace float output class wrong');
+
 % cinput dcomplex[] + coutput dcomplex[] ......................................
 % NOTE: nocopy complex requires MX_HAS_INTERLEAVED_COMPLEX; on split-complex
 % systems the mex function returns an error, which we accept as passing.
@@ -65,6 +72,21 @@ catch ME
   fprintf('  (dcomplex skipped: split complex)\n');
 end
 
+% cinout dcomplex[] ............................................................
+az2 = complex((1:5)', (5:-1:1)');
+az2_orig = az2 + 0;  % force copy
+try
+  dz = nocopy_inplace_dcomplex(az2);
+  assert(norm(dz - 3*az2_orig) < tol, 'nocopy inplace dcomplex failed');
+  assert(strcmp(class(dz), 'double'), 'nocopy inplace dcomplex output class wrong');
+  assert(~isreal(dz), 'nocopy inplace dcomplex output should be complex');
+catch ME
+  if isempty(strfind(ME.message, 'interleaved complex'))
+    rethrow(ME);
+  end
+  fprintf('  (dcomplex inplace skipped: split complex)\n');
+end
+
 % cinput fcomplex[] + coutput fcomplex[] ......................................
 azf = single(complex((1:7)', (7:-1:1)'));
 try
@@ -85,6 +107,21 @@ catch ME
     rethrow(ME);
   end
   fprintf('  (fcomplex skipped: split complex)\n');
+end
+
+% cinout fcomplex[] ............................................................
+azf2 = single(complex((1:5)', (5:-1:1)'));
+azf2_orig = azf2 + single(0);  % force copy
+try
+  dzf = nocopy_inplace_fcomplex(azf2);
+  assert(norm(double(dzf) - 3*double(azf2_orig)) < tols, 'nocopy inplace fcomplex failed');
+  assert(strcmp(class(dzf), 'single'), 'nocopy inplace fcomplex output class wrong');
+  assert(~isreal(dzf), 'nocopy inplace fcomplex output should be complex');
+catch ME
+  if isempty(strfind(ME.message, 'interleaved complex'))
+    rethrow(ME);
+  end
+  fprintf('  (fcomplex inplace skipped: split complex)\n');
 end
 
 fprintf('test_nocopy: PASSED\n');
