@@ -9,9 +9,12 @@ src/lex.yy.o
 src/mwrap-ast.o
 src/mwrap-cgen.o
 src/mwrap-mgen.o
+src/mwrap.y
 src/mwrap.cc
 src/mwrap.hh
 src/mwrap-support.h
+src/mwrap-cpp-support.h
+src/mwrap-oct-support.h
 src/mwrap-typecheck.o
 src/mwrap.o
 src/mwrap.output

@@ -20,8 +20,8 @@ extern "C" {
 
 using std::string;
 
-bool  mw_oct_mode = false;        // Oct-file mode?
 bool  mw_cppmex_mode = false;    // C++ MEX API mode?
+bool  mw_oct_mode = false;        // Oct-file mode?
 bool  mw_use_gpu = 0;         // Use GPU?
 bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
@@ -280,13 +280,13 @@ const char* help_string =
 "mwrap 1.4 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
-"  mwrap [-mex outputmex | -oct octfunc | -cppmex outputcpp]\n"
+"  mwrap [-mex outputmex | -cppmex outputcpp | -oct octfunc]\n"
 "        [-m output.m] [-c output.c] [-mb] [-list]\n"
 "        [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu] infile1 infile2 ...\n"
 "\n"
 "  -mex outputmex   -- specify the MATLAB mex function name (default, C API)\n"
-"  -oct octfunc     -- generate Octave oct-file (DEFUN_DLD) instead of MEX\n"
 "  -cppmex outputcpp -- generate MATLAB C++ MEX API gateway (R2018a+)\n"
+"  -oct octfunc     -- generate Octave oct-file (DEFUN_DLD) instead of MEX\n"
 "  -m output.m      -- generate the MATLAB stub called output.m\n"
 "  -c output.c      -- generate the C/C++ file\n"
 "  -mb              -- generate .m files specified with @ redirections\n"

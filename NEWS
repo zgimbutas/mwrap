@@ -1,5 +1,11 @@
 Recent updates:
 
+Version 1.4 (Feb 24, 2026):
+Added MATLAB C++ MEX API backend (-cppmex) for the R2018a+ C++ API
+Added Octave oct-file backend (-oct) for native DEFUN_DLD code generation
+Added nocopy modifier for zero-copy array passing (nocopy input/output/inout)
+Added GPU support for the C++ MEX API backend (-cppmex -gpu), via fallback to C MEX API
+
 Version 1.3 (Feb 23, 2026):
 Added CMake build system and GitHub Actions CI
 Validate input files before processing to prevent data loss

@@ -12,7 +12,7 @@
 \newcommand{\mwrap}{\textsc{MWrap}}
 \newcommand{\gOR}{ $|$ }
 
-\title{\mwrap\ User Guide\\ Version 1.3}
+\title{\mwrap\ User Guide\\ Version 1.4}
 \author{D.~Bindel, A.~Barnett, Z.~Gimbutas, M.~Rachh, L.~Lu, R.~Laboissi\`ere}
 \date{@RELEASE_DATE@}
 
@@ -84,7 +84,8 @@ object-oriented facilities will not function with GNU Octave.
 
 The {\tt mwrap} command line has the following form:
 \begin{verbatim}
-  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] 
+  mwrap [-mex outputmex] [-cppmex outputcppmex] [-oct outputoct]
+        [-m output.m] [-c outputmex.c] [-mb]
         [-list] [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu]
         infile1 infile2 ...
 \end{verbatim}
@@ -94,6 +95,18 @@ where
 \item {\tt -mex} specifies the name of the MEX function that the
   generated MATLAB functions will call.  This name will generally be
   the same as the prefix for the C/C++ output file name.
+
+\item {\tt -cppmex} specifies the name of the MATLAB C++ MEX API function
+  to generate.  The generated code uses the R2018a+ C++ MEX API
+  ({\tt MexFunction} class) and should be compiled with
+  {\tt mex -R2018a} or later.  This flag is an alternative to
+  {\tt -mex}/{\tt -c}, producing a C++ gateway instead of a C MEX file.
+
+\item {\tt -oct} specifies the name of the Octave oct-file function to
+  generate.  The generated code uses {\tt DEFUN\_DLD} and should be
+  compiled with {\tt mkoctfile}.  This flag is an alternative to
+  {\tt -mex}/{\tt -c}, producing a native Octave gateway instead of a
+  C MEX file.
 
 \item {\tt -m} specifies the name of the MATLAB script to be
   generated.
@@ -254,11 +267,12 @@ variable.
              & {\tt new} {\it class-id}
 \vspace{5mm} \\
   args       & arg {\tt ,} arg {\tt ,} $\ldots$ \gOR\ $\epsilon$ \\
-  arg        & devicespec iospec type {\it var-id} \\
+  arg        & devicespec nocopyspec iospec type {\it var-id} \\
              & devicespec ispec  type {\it value} \\
   returnvar  & type {\it var-id}
 \vspace{5mm} \\
   devicespec & {\tt cpu} \gOR\ {\tt gpu} \gOR\ $\epsilon$ \\
+  nocopyspec & {\tt nocopy} \gOR\ $\epsilon$ \\
   iospec     & {\tt input} \gOR\ {\tt output} \gOR\ {\tt inout} \gOR\
                $\epsilon$ \\
   ispec      & {\tt input} \gOR\ $\epsilon$ \\
@@ -560,6 +574,41 @@ MATLAB's GPU-enabled {\tt mex} compiler ({\tt nvmex} or {\tt mex}
 with CUDA support).
 
 The default device specifier is {\tt cpu}, which can be omitted.
+
+
+\subsection{Zero-copy array passing}
+\label{nocopy-section}
+
+By default, \mwrap\ copies array data between MATLAB and the
+wrapped C/C++ function: input arrays are copied from the MATLAB
+matrix into a temporary buffer, and output arrays are copied back.
+For large arrays this overhead can be significant.
+
+The {\tt nocopy} modifier eliminates these copies by passing
+pointers directly into (or out of) the MATLAB array storage.
+It can be combined with {\tt input}, {\tt output}, or {\tt inout}:
+\begin{verbatim}
+  # func(nocopy input double[n] x, nocopy output double[n] y, int n);
+\end{verbatim}
+
+\begin{itemize}
+\item {\tt nocopy input} --- the wrapped function receives a pointer
+  directly into the MATLAB input array's data.  The data must not be
+  modified by the callee.
+
+\item {\tt nocopy output} --- \mwrap\ pre-allocates the MATLAB output
+  array and passes a pointer to its data buffer.  The callee writes
+  results directly into the output array, avoiding a copy.
+
+\item {\tt nocopy inout} --- the input array's data pointer is passed
+  directly and the same array is returned as output.  The callee may
+  modify the data in place.
+\end{itemize}
+
+The {\tt nocopy} modifier is supported for numeric array types
+({\tt double[]}, {\tt float[]}, {\tt int[]}, etc.) in all backends.
+It should only be used when the wrapped function's memory access
+pattern is compatible with direct access to MATLAB/Octave storage.
 
 
 \section{Example}

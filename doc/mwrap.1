@@ -1,9 +1,11 @@
-.TH MWRAP 1 2012 "mwrap" "MWRAP manpage"
+.TH MWRAP 1 2026 "mwrap" "MWRAP manpage"
 .SH NAME
 mwrap - Octave/MATLAB mex generator
 .SH SYNOPSIS
 .SY mwrap
 .OP \-mex \fIoutputmex\fP
+.OP \-cppmex \fIoutputcppmex\fP
+.OP \-oct \fIoutputoct\fP
 .OP \-m \fIoutput.m\fP
 .OP \-c \fIoutputmex.c\fP
 .OP \-mb
@@ -29,6 +31,17 @@ temporary storage, are hidden from the user.
 specifies the name of the MEX function that the generated functions will
 call.  This name will generally be the same as the prefix for the C/C++
 output file name.
+.
+.TP
+.B \-cppmex
+specifies the name of the MATLAB C++ MEX API function to generate.  The
+generated code uses the R2018a+ C++ MEX API (MexFunction class) and should
+be compiled with \fBmex -R2018a\fP or later.
+.
+.TP
+.B \-oct
+specifies the name of the Octave oct-file function to generate.  The
+generated code uses DEFUN_DLD and should be compiled with \fBmkoctfile\fP.
 .
 .TP
 .B \-m

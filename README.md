@@ -2,9 +2,9 @@ MWrap
 =====
 
 MWrap is an interface generation system in the spirit of SWIG or matwrap.
-From a set of augmented MATLAB script files, it generates a MEX gateway to desired C/C++/Fortran function calls and MATLAB function files to access that gateway, hiding the details of converting to and from MATLAB's data structures and of allocating and freeing temporary storage.
-It is also compatible with modern Octave via `mkoctfile --mex`.
-It makes wrapping C/C++/Fortran from MATLAB almost pleasant!
+From a set of augmented MATLAB script files, it generates gateway code for C/C++/Fortran function calls and MATLAB function files to access that gateway, hiding the details of converting to and from MATLAB's data structures and of allocating and freeing temporary storage.
+It supports multiple backends: traditional C MEX (compatible with both MATLAB and Octave via `mkoctfile --mex`), the MATLAB C++ MEX API (R2018a+), and native Octave oct-file generation.
+It makes wrapping C/C++/Fortran from MATLAB/Octave almost pleasant!
 
 MWrap was created by David Bindel, who hosts his old version
 at https://www.cs.cornell.edu/~bindel/sw/mwrap
@@ -139,5 +139,12 @@ Contributors: Marco Barbone, Zydrunas Gimbutas.
 - Optimize MEX dispatch with integer ID + function pointer table
 - Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add Python mwrap implementation
+
+**Version 1.4** (2026)
+Contributors: Zydrunas Gimbutas.
+- Add MATLAB C++ MEX API backend (`-cppmex`) for the R2018a+ C++ API
+- Add Octave oct-file backend (`-oct`) for native `DEFUN_DLD` code generation
+- Add `nocopy` modifier for zero-copy array passing (`nocopy input`, `nocopy output`, `nocopy inout`)
+- Add GPU support for the C++ MEX API backend (`-cppmex -gpu`), via fallback to C MEX API
 
 Also see https://github.com/zgimbutas/mwrap/tags

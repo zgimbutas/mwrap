@@ -22,22 +22,22 @@ from mwrap_ast import MwrapContext
 from mwrap_lexer import Lexer
 from mwrap_parser import Parser
 from mwrap_cgen import print_mex_init, print_mex_file
-from mwrap_octgen import print_oct_init, print_oct_file
 from mwrap_cppgen import print_cpp_init, print_cpp_file
+from mwrap_octgen import print_oct_init, print_oct_file
 
 
 HELP_STRING = """\
 mwrap 1.4 - MEX/oct-file generator for MATLAB and Octave
 
 Syntax:
-  mwrap [-mex outputmex | -oct outputoct | -cppmex outputcpp]
+  mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct]
         [-m output.m] [-c output.c]
         [-mb] [-list] [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu]
         infile1 infile2 ...
 
   -mex outputmex   -- generate MEX gateway (default, C API)
-  -oct outputoct   -- generate Octave oct-file gateway
   -cppmex outputcpp -- generate MATLAB C++ MEX API gateway (R2018a+)
+  -oct outputoct   -- generate Octave oct-file gateway
   -m output.m      -- generate the MATLAB stub called output.m
   -c output.c      -- generate the C/C++ file
   -mb              -- generate .m files specified with @ redirections
@@ -50,7 +50,7 @@ Syntax:
 """
 
 USAGE_STRING = """\
-Usage: mwrap [-mex outputmex | -oct outputoct | -cppmex outputcpp] [-m output.m] [-c output.c] infile1 ...
+Usage: mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct] [-m output.m] [-c output.c] infile1 ...
 Try 'mwrap --help' for more information.
 """
 
@@ -62,16 +62,16 @@ def _load_support():
         return f.read()
 
 
-def _load_oct_support():
-    """Load the runtime support header for oct-files."""
-    support_path = os.path.join(_script_dir, "mwrap_oct_support.h")
+def _load_cpp_support():
+    """Load the runtime support header for C++ MEX API."""
+    support_path = os.path.join(_script_dir, "mwrap_cpp_support.h")
     with open(support_path, "r") as f:
         return f.read()
 
 
-def _load_cpp_support():
-    """Load the runtime support header for C++ MEX API."""
-    support_path = os.path.join(_script_dir, "mwrap_cpp_support.h")
+def _load_oct_support():
+    """Load the runtime support header for oct-files."""
+    support_path = os.path.join(_script_dir, "mwrap_oct_support.h")
     with open(support_path, "r") as f:
         return f.read()
 
@@ -83,8 +83,8 @@ def _build_parser():
     p.add_argument('-m', dest='mfile')
     p.add_argument('-c', dest='cfile')
     p.add_argument('-mex', dest='mexfunc', default='mexfunction')
-    p.add_argument('-oct', dest='octfunc')
     p.add_argument('-cppmex', dest='cppfunc')
+    p.add_argument('-oct', dest='octfunc')
     p.add_argument('-mb', action='store_true', dest='mbatching')
     p.add_argument('-list', action='store_true', dest='listing')
     p.add_argument('-catch', action='store_true', dest='catch_')
@@ -112,10 +112,10 @@ def main():
         return 0
 
     # Determine backend mode
-    oct_mode = args.octfunc is not None
     cppmex_mode = args.cppfunc is not None
-    # If -oct was given, the user explicitly chose oct-file mode
+    oct_mode = args.octfunc is not None
     # If -cppmex was given, the user chose C++ MEX API mode
+    # If -oct was given, the user explicitly chose oct-file mode
     # If -mex was given (or default), use C MEX mode
 
     if oct_mode and cppmex_mode:

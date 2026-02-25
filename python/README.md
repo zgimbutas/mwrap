@@ -24,6 +24,8 @@ Key flags:
 | Flag | Description |
 |------|-------------|
 | `-mex name` | MATLAB MEX function name |
+| `-cppmex name` | MATLAB C++ MEX API function name (R2018a+) |
+| `-oct name` | Octave oct-file function name (generates DEFUN_DLD gateway) |
 | `-c file.c` | Generate C/C++ MEX gateway file |
 | `-m file.m` | Generate MATLAB stub file |
 | `-mb` | Generate `.m` files from `@` redirections |
@@ -45,7 +47,11 @@ Key flags:
 | `mwrap_typecheck.py` | Type validation |
 | `mwrap_cgen.py` | MEX C/C++ code generator |
 | `mwrap_mgen.py` | MATLAB `.m` stub generator |
-| `mwrap_support.c` | Runtime support library embedded in generated MEX files |
+| `mwrap_cppgen.py` | MATLAB C++ MEX API code generator |
+| `mwrap_octgen.py` | Octave oct-file (DEFUN_DLD) code generator |
+| `mwrap_support.c` | Runtime support library for C MEX backend |
+| `mwrap_cpp_support.h` | Runtime support for C++ MEX API backend |
+| `mwrap_oct_support.h` | Runtime support for Octave oct-file backend |
 
 ## License
 
