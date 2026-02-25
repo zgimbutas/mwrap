@@ -8,3 +8,4 @@ test_redirect;
 test_include;
 test_single;
 test_char;
+test_nocopy;

@@ -244,6 +244,15 @@ def _declare_out_args(fp, args):
             tb = _declare_type(v)
             if is_array(v.tinfo) or is_obj(v.tinfo) or v.tinfo == VT.string:
                 fp.write(f"    {tb:10s}  out{v.output_label}_=0; /* {v.name:10s} */\n")
+                # Nocopy output: declare backing Matrix at function scope
+                if v.nocopy and v.iospec == 'o' and is_array(v.tinfo):
+                    bt = v.basetype
+                    zinfo = _complex_matrix_info(v)
+                    if zinfo:
+                        fp.write(f"    {zinfo[0]}  mat_out{v.output_label}_;\n")
+                    elif bt in OCT_TYPE_PROPS:
+                        tp = _oct_type_props(bt)
+                        fp.write(f"    {tp.matrix_type}  mat_out{v.output_label}_;\n")
             else:
                 fp.write(f"    {tb:10s}  out{v.output_label}_;   /* {v.name:10s} */\n")
 
@@ -305,8 +314,8 @@ def _unpack_dims(fp, f):
 
 def _check_dims(fp, args):
     for v in args:
-        if (v.iospec != 'o' and is_array(v.tinfo) and
-                v.qual and v.qual.args):
+        if (v.iospec != 'o' and not v.nocopy and
+                is_array(v.tinfo) and v.qual and v.qual.args):
             a = v.qual.args
             if len(a) > 1:
                 fp.write(f"    if (args({v.input_label}).rows() != dim{a[0].input_label}_ ||\n"
@@ -490,7 +499,36 @@ def _check_inputs(fp, args):
 
 def _alloc_output(fp, ctx, args, return_flag):
     for v in args:
-        if v.iospec == 'o':
+        if v.nocopy and v.iospec == 'o':
+            if is_array(v.tinfo):
+                bt = v.basetype
+                zinfo = _complex_matrix_info(v)
+                if zinfo:
+                    eff_mat_type = zinfo[0]
+                    known = True
+                elif bt in OCT_TYPE_PROPS:
+                    eff_mat_type = _oct_type_props(bt).matrix_type
+                    known = True
+                else:
+                    known = False
+                if known:
+                    da = v.qual.args if v.qual else []
+                    if len(da) == 1:
+                        fp.write(f"    mat_out{v.output_label}_ = {eff_mat_type}(dim{da[0].input_label}_, 1);\n")
+                    elif len(da) == 2:
+                        fp.write(f"    mat_out{v.output_label}_ = {eff_mat_type}(dim{da[0].input_label}_, dim{da[1].input_label}_);\n")
+                    else:
+                        sz = _alloc_size_expr(da)
+                        fp.write(f"    mat_out{v.output_label}_ = {eff_mat_type}({sz}, 1);\n")
+                    fp.write(f"    out{v.output_label}_ = ({bt}*) mat_out{v.output_label}_.rwdata();\n")
+                else:
+                    # Unknown type: fall back to new[]
+                    fp.write(f"    out{v.output_label}_ = new {bt}[{_alloc_size_expr(v.qual.args)}];\n")
+            elif v.tinfo == VT.rarray:
+                fp.write(f"    out{v.output_label}_ = ({v.basetype}*) NULL;\n")
+            elif v.tinfo == VT.string:
+                fp.write(f"    out{v.output_label}_ = new char[{_alloc_size_expr(v.qual.args)}];\n")
+        elif v.iospec == 'o':
             if is_array(v.tinfo):
                 fp.write(f"    out{v.output_label}_ = new {v.basetype}[{_alloc_size_expr(v.qual.args)}];\n")
             elif v.tinfo == VT.rarray:
@@ -625,6 +663,16 @@ def _marshal_array(fp, v):
         eff_mat_type = "Matrix"
         known_type = False
 
+    # Nocopy output: Matrix was pre-allocated in _alloc_output, just assign
+    if v.nocopy and v.iospec == 'o' and is_array(v.tinfo) and known_type:
+        fp.write(f"    retval({ol}) = mat_out{ol}_;\n")
+        return
+
+    # Nocopy inout: function modified data in-place, return the input Matrix
+    if v.nocopy and v.iospec == 'b' and known_type:
+        fp.write(f"    retval({ol}) = mat_in{il}_;\n")
+        return
+
     if v.tinfo == VT.rarray:
         fp.write(f"    if (out{ol}_ == NULL) {{\n")
         fp.write(f"        retval({ol}) = Matrix(0, 0);\n")
@@ -749,8 +797,21 @@ def _marshal_results(fp, ctx, f):
 def _dealloc_var(fp, ctx, vars, return_flag):
     for v in vars:
         if is_array(v.tinfo) or v.tinfo == VT.string:
-            if v.iospec == 'o':
+            if v.nocopy and v.iospec == 'o' and is_array(v.tinfo):
+                # Nocopy output: memory owned by Matrix, no dealloc needed.
+                # Exception: unknown types that fell back to new[]
+                bt = v.basetype
+                zinfo = _complex_matrix_info(v)
+                if bt not in OCT_TYPE_PROPS and not zinfo:
+                    fp.write(f"    if (out{v.output_label}_) delete[] out{v.output_label}_;\n")
+            elif v.iospec == 'o':
                 fp.write(f"    if (out{v.output_label}_) delete[] out{v.output_label}_;\n")
+            elif v.nocopy and v.iospec == 'b' and is_array(v.tinfo):
+                # Nocopy inout: memory owned by input Matrix, no dealloc needed.
+                bt = v.basetype
+                zinfo = _complex_matrix_info(v)
+                if bt not in OCT_TYPE_PROPS and not zinfo:
+                    fp.write(f"    if (in{v.input_label}_)  delete[] in{v.input_label}_;\n")
             elif v.iospec == 'b':
                 # Inout arrays backed by known Octave types don't need dealloc
                 # (pointer into Matrix). Only dealloc for unknown types.
