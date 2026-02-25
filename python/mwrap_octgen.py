@@ -357,12 +357,28 @@ def _unpack_input_array(fp, v):
     zinfo = _complex_matrix_info(v)
     if zinfo:
         # Complex array: use ComplexMatrix/FloatComplexMatrix
+        # Auto-promote real to complex when needed.  Octave's iscomplex()
+        # returns false for arrays whose imaginary part is all-zero (unlike
+        # MATLAB), so we accept real arrays and promote them.
         mat_type, getter, checker = zinfo
-        fp.write(f"        if (!args({il}).{checker}()) {{\n"
-               f"            mw_err_txt_ = \"Invalid array argument, {checker} expected\";\n"
+        if v.tinfo in (VT.carray,):
+            # fcomplex: checker is is_single_type (checks precision, not
+            # complexity).  float_complex_matrix_value() auto-promotes
+            # real single arrays, so a single check suffices.
+            real_type_check = "is_single_type"
+            real_getter = "float_matrix_value"
+        else:
+            # dcomplex: need explicit real-to-complex promotion
+            real_type_check = "is_double_type"
+            real_getter = "matrix_value"
+        fp.write(f"        if (args({il}).{checker}()) {{\n"
+               f"            mat_in{il}_ = args({il}).{getter}();\n"
+               f"        }} else if (args({il}).{real_type_check}()) {{\n"
+               f"            mat_in{il}_ = {mat_type}(args({il}).{real_getter}());\n"
+               f"        }} else {{\n"
+               f"            mw_err_txt_ = \"Invalid array argument, numeric type expected\";\n"
                f"            goto mw_err_label;\n"
                f"        }}\n")
-        fp.write(f"        mat_in{il}_ = args({il}).{getter}();\n")
         if v.iospec == 'i':
             fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.data();\n")
         else:

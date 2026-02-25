@@ -228,9 +228,12 @@ def _declare_in_args(fp, args):
                         zinfo = _complex_array_info(v)
                         if zinfo:
                             _, _, ta = zinfo
+                            # Also declare vec_ for real-to-complex fallback
+                            fp.write(f"    std::unique_ptr<{ta}>  ta_nc_in{v.input_label}_;\n")
+                            fp.write(f"    std::vector<{tp.scalar_type}>  vec_in{v.input_label}_;\n")
                         else:
                             ta = tp.typed_array
-                        fp.write(f"    std::unique_ptr<{ta}>  ta_nc_in{v.input_label}_;\n")
+                            fp.write(f"    std::unique_ptr<{ta}>  ta_nc_in{v.input_label}_;\n")
                     else:
                         fp.write(f"    std::vector<{tp.scalar_type}>  vec_in{v.input_label}_;\n")
             elif v.tinfo == VT.mx:
@@ -371,17 +374,37 @@ def _unpack_input_array(fp, v):
         zinfo = _complex_array_info(v)
         if zinfo:
             ate, st, ta = zinfo
+            # Auto-promote real to complex: fall back to copy path
+            if v.tinfo in (VT.zarray,):
+                real_ate = "ArrayType::DOUBLE"
+                real_ta = "TypedArray<double>"
+            else:
+                real_ate = "ArrayType::SINGLE"
+                real_ta = "TypedArray<float>"
+            fp.write(f"    if (args[{il}].getNumberOfElements() != 0) {{\n")
+            fp.write(f"        if (args[{il}].getType() == {ate}) {{\n")
+            fp.write(f"            ta_nc_in{il}_ = std::make_unique<{ta}>(args[{il}]);\n")
+            fp.write(f"            in{il}_ = ({bt}*) &(*ta_nc_in{il}_->begin());\n")
+            fp.write(f"        }} else if (args[{il}].getType() == {real_ate}) {{\n")
+            fp.write(f"            {real_ta} ta_real_ = args[{il}];\n")
+            fp.write(f"            vec_in{il}_.reserve(ta_real_.getNumberOfElements());\n")
+            fp.write(f"            for (auto v_ : ta_real_) vec_in{il}_.push_back({st}(v_, 0));\n")
+            fp.write(f"            in{il}_ = ({bt}*) vec_in{il}_.data();\n")
+            fp.write(f"        }} else {{\n"
+                   f"            mw_err_txt_ = \"Invalid array argument, numeric type expected\";\n"
+                   f"            goto mw_err_label;\n"
+                   f"        }}\n")
         else:
             ate = tp.array_type_enum
             st = tp.scalar_type
             ta = tp.typed_array
-        fp.write(f"    if (args[{il}].getNumberOfElements() != 0) {{\n")
-        fp.write(f"        if (args[{il}].getType() != {ate}) {{\n"
-               f"            mw_err_txt_ = \"Invalid array argument, {ate} expected\";\n"
-               f"            goto mw_err_label;\n"
-               f"        }}\n")
-        fp.write(f"        ta_nc_in{il}_ = std::make_unique<{ta}>(args[{il}]);\n")
-        fp.write(f"        in{il}_ = ({bt}*) &(*ta_nc_in{il}_->begin());\n")
+            fp.write(f"    if (args[{il}].getNumberOfElements() != 0) {{\n")
+            fp.write(f"        if (args[{il}].getType() != {ate}) {{\n"
+                   f"            mw_err_txt_ = \"Invalid array argument, {ate} expected\";\n"
+                   f"            goto mw_err_label;\n"
+                   f"        }}\n")
+            fp.write(f"        ta_nc_in{il}_ = std::make_unique<{ta}>(args[{il}]);\n")
+            fp.write(f"        in{il}_ = ({bt}*) &(*ta_nc_in{il}_->begin());\n")
         fp.write(f"    }} else\n"
                f"        in{il}_ = NULL;\n\n")
         return
@@ -392,13 +415,27 @@ def _unpack_input_array(fp, v):
     zinfo = _complex_array_info(v)
     if zinfo:
         # Complex array: use TypedArray<std::complex<T>>
+        # Auto-promote real to complex when needed.  MATLAB tracks the
+        # complex flag, but user code may still pass a real array where
+        # complex is expected (e.g. zeros(n) as placeholder).
         ate, st, ta = zinfo
-        fp.write(f"        if (args[{il}].getType() != {ate}) {{\n"
-               f"            mw_err_txt_ = \"Invalid array argument, {ate} expected\";\n"
+        if v.tinfo in (VT.zarray,):
+            real_ate = "ArrayType::DOUBLE"
+            real_ta = "TypedArray<double>"
+        else:
+            real_ate = "ArrayType::SINGLE"
+            real_ta = "TypedArray<float>"
+        fp.write(f"        if (args[{il}].getType() == {ate}) {{\n")
+        fp.write(f"            {ta} ta_in{il}_ = args[{il}];\n")
+        fp.write(f"            vec_in{il}_.assign(ta_in{il}_.begin(), ta_in{il}_.end());\n")
+        fp.write(f"        }} else if (args[{il}].getType() == {real_ate}) {{\n")
+        fp.write(f"            {real_ta} ta_real_ = args[{il}];\n")
+        fp.write(f"            vec_in{il}_.reserve(ta_real_.getNumberOfElements());\n")
+        fp.write(f"            for (auto v_ : ta_real_) vec_in{il}_.push_back({st}(v_, 0));\n")
+        fp.write(f"        }} else {{\n"
+               f"            mw_err_txt_ = \"Invalid array argument, numeric type expected\";\n"
                f"            goto mw_err_label;\n"
                f"        }}\n")
-        fp.write(f"        {ta} ta_in{il}_ = args[{il}];\n")
-        fp.write(f"        vec_in{il}_.assign(ta_in{il}_.begin(), ta_in{il}_.end());\n")
         fp.write(f"        in{il}_ = ({bt}*) vec_in{il}_.data();\n")
     elif bt in CPP_TYPE_PROPS:
         # Known scalar types: type check + copy via iterators
