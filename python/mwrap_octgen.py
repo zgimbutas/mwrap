@@ -40,7 +40,7 @@ OCT_TYPE_PROPS = {
     "int64_t":  OctTypeProps("int64NDArray",       "int64_array_value",          "int64_value",           "is_int64_type",   "int64_t",              "int64NDArray"),
     "uint32_t": OctTypeProps("uint32NDArray",      "uint32_array_value",         "uint_value",            "is_uint32_type",  "uint32_t",             "uint32NDArray"),
     "uint64_t": OctTypeProps("uint64NDArray",      "uint64_array_value",         "uint64_value",          "is_uint64_type",  "uint64_t",             "uint64NDArray"),
-    "dcomplex": OctTypeProps("ComplexMatrix",      "complex_matrix_value",       "complex_value",         "is_complex_type", "std::complex<double>", "ComplexMatrix"),
+    "dcomplex": OctTypeProps("ComplexMatrix",      "complex_matrix_value",       "complex_value",         "iscomplex",       "std::complex<double>", "ComplexMatrix"),
     "fcomplex": OctTypeProps("FloatComplexMatrix", "float_complex_matrix_value", "float_complex_value",   "is_single_type",  "std::complex<float>",  "FloatComplexMatrix"),
     "char":     OctTypeProps("charMatrix",         "char_matrix_value",          "string_value",          "is_string",       "char",                 "charMatrix"),
 }
@@ -341,7 +341,7 @@ def _complex_matrix_info(v):
     if not complex_tinfo(v):
         return None
     if v.tinfo in (VT.zarray,):
-        return ("ComplexMatrix", "complex_matrix_value", "is_complex_type")
+        return ("ComplexMatrix", "complex_matrix_value", "iscomplex")
     if v.tinfo in (VT.carray,):
         return ("FloatComplexMatrix", "float_complex_matrix_value", "is_single_type")
     return None
@@ -620,9 +620,11 @@ def _marshal_array(fp, v):
     if not da:
         # No dims — inout array: create matrix from original size
         if known_type:
-            fp.write(f"{ws}{eff_mat_type} mat_out{ol}_(args({il}).rows(), args({il}).columns());\n")
-            fp.write(f"{ws}std::memcpy(mat_out{ol}_.rwdata(), in{il}_, args({il}).numel()*sizeof({bt}));\n")
-            fp.write(f"{ws}retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}{{\n")
+            fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_(args({il}).rows(), args({il}).columns());\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), in{il}_, args({il}).numel()*sizeof({bt}));\n")
+            fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}}}\n")
         else:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    octave_idx_type n_ = args({il}).numel();\n")
@@ -635,9 +637,11 @@ def _marshal_array(fp, v):
     elif len(da) == 1:
         # 1D
         if known_type:
-            fp.write(f"{ws}{eff_mat_type} mat_out{ol}_(dim{da[0].input_label}_, 1);\n")
-            fp.write(f"{ws}std::memcpy(mat_out{ol}_.rwdata(), {n}, dim{da[0].input_label}_*sizeof({bt}));\n")
-            fp.write(f"{ws}retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}{{\n")
+            fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_(dim{da[0].input_label}_, 1);\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), {n}, dim{da[0].input_label}_*sizeof({bt}));\n")
+            fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}}}\n")
         else:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    Matrix mat_out{ol}_(dim{da[0].input_label}_, 1);\n")
@@ -649,9 +653,11 @@ def _marshal_array(fp, v):
     elif len(da) == 2:
         # 2D
         if known_type:
-            fp.write(f"{ws}{eff_mat_type} mat_out{ol}_(dim{da[0].input_label}_, dim{da[1].input_label}_);\n")
-            fp.write(f"{ws}std::memcpy(mat_out{ol}_.rwdata(), {n}, dim{da[0].input_label}_*dim{da[1].input_label}_*sizeof({bt}));\n")
-            fp.write(f"{ws}retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}{{\n")
+            fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_(dim{da[0].input_label}_, dim{da[1].input_label}_);\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), {n}, dim{da[0].input_label}_*dim{da[1].input_label}_*sizeof({bt}));\n")
+            fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}}}\n")
         else:
             sz = f"dim{da[0].input_label}_*dim{da[1].input_label}_"
             fp.write(f"{ws}{{\n")
@@ -665,9 +671,11 @@ def _marshal_array(fp, v):
         # 3D+ — flatten to 1D
         sz = _alloc_size_expr(da)
         if known_type:
-            fp.write(f"{ws}{eff_mat_type} mat_out{ol}_({sz}, 1);\n")
-            fp.write(f"{ws}std::memcpy(mat_out{ol}_.rwdata(), {n}, ({sz})*sizeof({bt}));\n")
-            fp.write(f"{ws}retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}{{\n")
+            fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_({sz}, 1);\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), {n}, ({sz})*sizeof({bt}));\n")
+            fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
+            fp.write(f"{ws}}}\n")
         else:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    Matrix mat_out{ol}_({sz}, 1);\n")

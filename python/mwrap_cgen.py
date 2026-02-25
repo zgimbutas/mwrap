@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from mwrap_ast import (
     VT, Expr, TypeQual, Var, Func,
     id_string, print_func,
-    is_array, is_obj, complex_tinfo, nullable_return,
+    is_nocopy, iospec_dir, is_array, is_obj, complex_tinfo, nullable_return,
 )
 
 
@@ -68,8 +68,12 @@ def basetype_to_mxclassid(name):
     return _type_props(name).mxclass
 
 
+def basetype_to_mxaccessor(name):
+    return _type_props(name).accessor
+
+
 def vname(v):
-    if v.iospec == 'o':
+    if v.iospec == 'o' or v.iospec == 'O':
         return f"out{v.output_label}_"
     return f"in{v.input_label}_"
 
@@ -264,7 +268,7 @@ def _mex_casting_getter(fp, cname, inherits):
            "    if (mxGetClassID(a) == mxDOUBLE_CLASS &&\n"
            "        mxGetM(a)*mxGetN(a) == 1 &&\n"
            "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-           "        ((mxIsComplex(a) ? ((*mxGetComplexDoubles(a)).real == 0 && (*mxGetComplexDoubles(a)).imag == 0) : *mxGetDoubles(a) == 0))\n"
+           "        ((mxIsComplex(a) ? *mxGetComplexDoubles(a) == 0 : *mxGetDoubles(a) == 0)\n"
            "#else\n"
            "        *mxGetPr(a) == 0\n"
            "#endif\n"
@@ -314,7 +318,7 @@ def _declare_type(v):
     if v.tinfo == VT.string:
         return "char*"
     if v.tinfo == VT.mx:
-        if v.iospec == 'i':
+        if iospec_dir(v.iospec) == 'i':
             return "const mxArray*"
         return "mxArray*"
     assert False, f"Unknown tinfo {v.tinfo} for {v.name}"
@@ -324,7 +328,7 @@ def _declare_type(v):
 
 def _declare_in_args(fp, args):
     for v in args:
-        if v.iospec != 'o' and v.tinfo != VT.const:
+        if iospec_dir(v.iospec) != 'o' and v.tinfo != VT.const:
             tb = _declare_type(v)
             if is_array(v.tinfo) or is_obj(v.tinfo) or v.tinfo == VT.string:
                 fp.write(f"    {tb:10s}  in{v.input_label}_ =0; /* {v.name:10s} */\n")
@@ -336,7 +340,7 @@ def _declare_in_args(fp, args):
 
 def _declare_out_args(fp, args):
     for v in args:
-        if v.iospec == 'o' and v.tinfo != VT.mx:
+        if v.iospec in ('o', 'O') and v.tinfo != VT.mx:
             tb = _declare_type(v)
             if is_array(v.tinfo) or is_obj(v.tinfo) or v.tinfo == VT.string:
                 fp.write(f"    {tb:10s}  out{v.output_label}_=0; /* {v.name:10s} */\n")
@@ -400,7 +404,7 @@ def _unpack_dims(fp, f):
 
 def _check_dims(fp, args):
     for v in args:
-        if (v.iospec != 'o' and is_array(v.tinfo) and
+        if (iospec_dir(v.iospec) != 'o' and is_array(v.tinfo) and
                 v.qual and v.qual.args and v.devicespec != 'g'):
             a = v.qual.args
             if len(a) > 1:
@@ -433,6 +437,34 @@ def _cast_get_p(fp, ctx, basetype, input_label):
 def _unpack_input_array(fp, v):
     il = v.input_label
     bt = v.basetype
+
+    # --- Nocopy path ---
+    if v.devicespec != 'g' and is_nocopy(v.iospec):
+        mxcid = basetype_to_mxclassid(bt)
+        accessor = basetype_to_mxaccessor(bt)
+        fp.write(f"    if (mxGetM(prhs[{il}])*mxGetN(prhs[{il}]) != 0) {{\n")
+        fp.write(f"        if( mxGetClassID(prhs[{il}]) != {mxcid} )\n"
+               f"            mw_err_txt_ = \"Invalid array argument, {mxcid} expected\";\n"
+               f"        if (mw_err_txt_) goto mw_err_label;\n")
+        if accessor and complex_tinfo(v):
+            fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                   f"        in{il}_ = ({bt}*) {accessor}(prhs[{il}]);\n"
+                   "#else\n")
+            fp.write("        mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
+                   "            \"Zero-copy complex requires interleaved complex; falling back to copy\");\n")
+            cs = _copier_suffix(bt)
+            fp.write(f"        in{il}_ = mxWrapGetArray_{cs}{bt}(prhs[{il}], &mw_err_txt_);\n")
+            fp.write("        if (mw_err_txt_) goto mw_err_label;\n"
+                   "#endif\n")
+        elif accessor:
+            _interleaved_branch(fp,
+                f"        in{il}_ = ({bt}*) {accessor}(prhs[{il}]);\n",
+                f"        in{il}_ = ({bt}*) mxGetData(prhs[{il}]);\n")
+        else:
+            fp.write(f"        in{il}_ = ({bt}*) mxGetData(prhs[{il}]);\n")
+        fp.write(f"    }} else\n"
+               f"        in{il}_ = NULL;\n\n")
+        return
 
     # --- Regular (copy) path for CPU ---
     if v.devicespec != 'g':
@@ -499,7 +531,7 @@ def _unpack_input_string(fp, v):
 
 def _unpack_inputs_var(fp, ctx, args):
     for v in args:
-        if v.iospec == 'o':
+        if v.iospec in ('o', 'O'):
             continue
         if is_obj(v.tinfo):
             _cast_get_p(fp, ctx, v.basetype, v.input_label)
@@ -544,7 +576,7 @@ def _unpack_inputs(fp, ctx, f):
 
 def _check_inputs(fp, args):
     for v in args:
-        if v.iospec != 'o' and v.tinfo in (VT.obj, VT.r_obj):
+        if iospec_dir(v.iospec) != 'o' and v.tinfo in (VT.obj, VT.r_obj):
             fp.write(f"    if (!in{v.input_label}_) {{\n"
                    f"        mw_err_txt_ = \"Argument {v.name} cannot be null\";\n"
                    f"        goto mw_err_label;\n"
@@ -555,7 +587,39 @@ def _check_inputs(fp, args):
 
 def _alloc_output(fp, ctx, args, return_flag):
     for v in args:
-        if v.iospec == 'o':
+        if v.iospec == 'O':
+            # Nocopy output
+            if v.devicespec != 'g' and is_array(v.tinfo):
+                da = v.qual.args
+                mxcid = basetype_to_mxclassid(v.basetype)
+                accessor = basetype_to_mxaccessor(v.basetype)
+                mtype = "mxCOMPLEX" if complex_tinfo(v) else "mxREAL"
+                if accessor and complex_tinfo(v):
+                    fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n")
+                    if len(da) == 2:
+                        fp.write(f"    plhs[{v.output_label}] = mxCreateNumericMatrix(dim{da[0].input_label}_, dim{da[1].input_label}_, {mxcid}, {mtype});\n")
+                    elif da:
+                        fp.write(f"    plhs[{v.output_label}] = mxCreateNumericMatrix({_alloc_size_expr(da)}, 1, {mxcid}, {mtype});\n")
+                    fp.write(f"    out{v.output_label}_ = ({v.basetype}*) {accessor}(plhs[{v.output_label}]);\n")
+                    fp.write("#else\n")
+                    fp.write("    mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
+                           "        \"Zero-copy complex requires interleaved complex; falling back to copy\");\n")
+                    if da:
+                        fp.write(f"    out{v.output_label}_ = ({v.basetype}*) mxMalloc({_alloc_size_expr(da)}*sizeof({v.basetype}));\n")
+                    fp.write("#endif\n")
+                else:
+                    # Non-complex nocopy output
+                    if len(da) == 2:
+                        fp.write(f"    plhs[{v.output_label}] = mxCreateNumericMatrix(dim{da[0].input_label}_, dim{da[1].input_label}_, {mxcid}, {mtype});\n")
+                    elif da:
+                        fp.write(f"    plhs[{v.output_label}] = mxCreateNumericMatrix({_alloc_size_expr(da)}, 1, {mxcid}, {mtype});\n")
+                    if accessor:
+                        _interleaved_branch(fp,
+                            f"    out{v.output_label}_ = ({v.basetype}*) {accessor}(plhs[{v.output_label}]);\n",
+                            f"    out{v.output_label}_ = ({v.basetype}*) mxGetData(plhs[{v.output_label}]);\n")
+                    else:
+                        fp.write(f"    out{v.output_label}_ = ({v.basetype}*) mxGetData(plhs[{v.output_label}]);\n")
+        elif v.iospec == 'o':
             if v.devicespec != 'g':
                 if not return_flag and is_obj(v.tinfo) and ctx.is_mxarray_type(v.basetype):
                     fp.write(f"    out{v.output_label}_ = mxWrapAlloc_{v.basetype}();\n")
@@ -601,7 +665,7 @@ def _make_call_args(fp, args, first):
         n = vname(v)
         if v.tinfo in (VT.obj, VT.r_obj):
             fp.write(f"*{n}")
-        elif v.tinfo == VT.mx and v.iospec == 'o':
+        elif v.tinfo == VT.mx and iospec_dir(v.iospec) == 'o':
             fp.write(f"plhs+{v.output_label}")
         elif v.tinfo in (VT.p_scalar, VT.p_cscalar, VT.p_zscalar):
             fp.write(f"&{n}")
@@ -706,10 +770,32 @@ def _make_stmt(fp, ctx, f):
 # --- Step 9: Marshal results ---
 
 def _marshal_array(fp, v):
+    nocopy_complex_fallback = False
     il = v.input_label
     ol = v.output_label
     bt = v.basetype
     n = vname(v)
+
+    # Nocopy output: plhs already set during allocation
+    if v.iospec == 'O' and v.devicespec != 'g':
+        if complex_tinfo(v):
+            fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                   "    /* nocopy: plhs already set during allocation */\n"
+                   "#else\n")
+            nocopy_complex_fallback = True
+        else:
+            return
+
+    # Nocopy inout: pass through
+    if v.iospec == 'B' and v.devicespec != 'g':
+        if complex_tinfo(v):
+            fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                   f"    plhs[{ol}] = (mxArray*)prhs[{il}];\n"
+                   "#else\n")
+            nocopy_complex_fallback = True
+        else:
+            fp.write(f"    plhs[{ol}] = (mxArray*)prhs[{il}];\n")
+            return
 
     if v.devicespec != 'g':
         da = v.qual.args
@@ -768,6 +854,9 @@ def _marshal_array(fp, v):
         if v.tinfo == VT.rarray:
             fp.write("    }\n")
 
+    if nocopy_complex_fallback:
+        fp.write("#endif\n")
+
     # GPU marshal
     if v.devicespec == 'g':
         if v.iospec == 'b':
@@ -799,8 +888,7 @@ def _marshal_result(fp, ctx, v, return_flag):
                      VT.p_cscalar, VT.p_zscalar):
         _interleaved_branch(fp,
             f"    plhs[{ol}] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
-            f"    mxGetComplexDoubles(plhs[{ol}])->real = real_{bt}({n});\n"
-            f"    mxGetComplexDoubles(plhs[{ol}])->imag = imag_{bt}({n});\n",
+            f"    *mxGetComplexDoubles(plhs[{ol}]) = {n};\n",
             f"    plhs[{ol}] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
             f"    *mxGetPr(plhs[{ol}]) = real_{bt}({n});\n"
             f"    *mxGetPi(plhs[{ol}]) = imag_{bt}({n});\n")
@@ -810,7 +898,7 @@ def _marshal_result(fp, ctx, v, return_flag):
 
 def _marshal_results_var(fp, ctx, vars, return_flag):
     for v in vars:
-        if v.iospec != 'i':
+        if iospec_dir(v.iospec) != 'i':
             _marshal_result(fp, ctx, v, return_flag)
 
 
@@ -825,7 +913,15 @@ def _marshal_results(fp, ctx, f):
 def _dealloc_var(fp, ctx, vars, return_flag):
     for v in vars:
         if v.devicespec != 'g':
-            if is_array(v.tinfo) or v.tinfo == VT.string:
+            if is_nocopy(v.iospec):
+                if complex_tinfo(v):
+                    fp.write("#ifndef MX_HAS_INTERLEAVED_COMPLEX\n")
+                    if v.iospec == 'O':
+                        fp.write(f"    if (out{v.output_label}_) mxFree(out{v.output_label}_);\n")
+                    else:
+                        fp.write(f"    if (in{v.input_label}_)  mxFree(in{v.input_label}_);\n")
+                    fp.write("#endif\n")
+            elif is_array(v.tinfo) or v.tinfo == VT.string:
                 if v.iospec == 'o':
                     fp.write(f"    if (out{v.output_label}_) mxFree(out{v.output_label}_);\n")
                 elif v.iospec == 'b' or not (v.basetype == "double" or v.basetype == "float"):

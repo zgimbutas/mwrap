@@ -44,7 +44,7 @@ static const OctTypeEntry oct_type_table[] = {
     {"int64_t",  {"int64NDArray",       "int64_array_value",          "int64_value",           "is_int64_type",   "int64_t",              "int64NDArray"}},
     {"uint32_t", {"uint32NDArray",      "uint32_array_value",         "uint_value",            "is_uint32_type",  "uint32_t",             "uint32NDArray"}},
     {"uint64_t", {"uint64NDArray",      "uint64_array_value",         "uint64_value",          "is_uint64_type",  "uint64_t",             "uint64NDArray"}},
-    {"dcomplex", {"ComplexMatrix",      "complex_matrix_value",       "complex_value",         "is_complex_type", "std::complex<double>", "ComplexMatrix"}},
+    {"dcomplex", {"ComplexMatrix",      "complex_matrix_value",       "complex_value",         "iscomplex",       "std::complex<double>", "ComplexMatrix"}},
     {"fcomplex", {"FloatComplexMatrix", "float_complex_matrix_value", "float_complex_value",   "is_single_type",  "std::complex<float>",  "FloatComplexMatrix"}},
     {"char",     {"charMatrix",         "char_matrix_value",          "string_value",          "is_string",       "char",                 "charMatrix"}},
     {NULL, {NULL, NULL, NULL, NULL, NULL, NULL}}
@@ -269,7 +269,7 @@ static bool get_complex_matrix_info(Var* v, ComplexMatrixInfo* info)
     if (v->tinfo == VT_zarray) {
         info->matrix_type = "ComplexMatrix";
         info->array_getter = "complex_matrix_value";
-        info->type_check = "is_complex_type";
+        info->type_check = "iscomplex";
         return true;
     }
     if (v->tinfo == VT_carray) {
@@ -820,11 +820,13 @@ static void marshal_array(FILE* fp, Var* v)
     if (ndims == 0) {
         /* No dims -- inout array: create matrix from original size */
         if (known_type) {
-            fprintf(fp, "%s%s mat_out%d_(args(%d).rows(), args(%d).columns());\n",
+            fprintf(fp, "%s{\n", ws);
+            fprintf(fp, "%s    %s mat_out%d_(args(%d).rows(), args(%d).columns());\n",
                     ws, eff_mat_type, ol, il, il);
-            fprintf(fp, "%sstd::memcpy(mat_out%d_.rwdata(), in%d_, args(%d).numel()*sizeof(%s));\n",
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), in%d_, args(%d).numel()*sizeof(%s));\n",
                     ws, ol, il, il, bt);
-            fprintf(fp, "%sretval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s}\n", ws);
         } else {
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    octave_idx_type n_ = args(%d).numel();\n", ws, il);
@@ -839,11 +841,13 @@ static void marshal_array(FILE* fp, Var* v)
     } else if (ndims == 1) {
         /* 1D */
         if (known_type) {
-            fprintf(fp, "%s%s mat_out%d_(dim%d_, 1);\n",
+            fprintf(fp, "%s{\n", ws);
+            fprintf(fp, "%s    %s mat_out%d_(dim%d_, 1);\n",
                     ws, eff_mat_type, ol, da->input_label);
-            fprintf(fp, "%sstd::memcpy(mat_out%d_.rwdata(), %s, dim%d_*sizeof(%s));\n",
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), %s, dim%d_*sizeof(%s));\n",
                     ws, ol, n, da->input_label, bt);
-            fprintf(fp, "%sretval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s}\n", ws);
         } else {
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    Matrix mat_out%d_(dim%d_, 1);\n",
@@ -858,11 +862,13 @@ static void marshal_array(FILE* fp, Var* v)
     } else if (ndims == 2) {
         /* 2D */
         if (known_type) {
-            fprintf(fp, "%s%s mat_out%d_(dim%d_, dim%d_);\n",
+            fprintf(fp, "%s{\n", ws);
+            fprintf(fp, "%s    %s mat_out%d_(dim%d_, dim%d_);\n",
                     ws, eff_mat_type, ol, da->input_label, da->next->input_label);
-            fprintf(fp, "%sstd::memcpy(mat_out%d_.rwdata(), %s, dim%d_*dim%d_*sizeof(%s));\n",
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), %s, dim%d_*dim%d_*sizeof(%s));\n",
                     ws, ol, n, da->input_label, da->next->input_label, bt);
-            fprintf(fp, "%sretval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s}\n", ws);
         } else {
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    Matrix mat_out%d_(dim%d_, dim%d_);\n",
@@ -877,13 +883,15 @@ static void marshal_array(FILE* fp, Var* v)
     } else {
         /* 3D+ -- flatten to 1D */
         if (known_type) {
-            fprintf(fp, "%s%s mat_out%d_(", ws, eff_mat_type, ol);
+            fprintf(fp, "%s{\n", ws);
+            fprintf(fp, "%s    %s mat_out%d_(", ws, eff_mat_type, ol);
             print_alloc_size_expr(fp, da);
             fprintf(fp, ", 1);\n");
-            fprintf(fp, "%sstd::memcpy(mat_out%d_.rwdata(), %s, (", ws, ol, n);
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), %s, (", ws, ol, n);
             print_alloc_size_expr(fp, da);
             fprintf(fp, ")*sizeof(%s));\n", bt);
-            fprintf(fp, "%sretval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
+            fprintf(fp, "%s}\n", ws);
         } else {
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    Matrix mat_out%d_(", ws, ol);
