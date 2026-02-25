@@ -135,8 +135,7 @@ def main():
             sys.stderr.write("Error: -gpu is not supported with -oct (oct-files do not support GPU arrays)\n")
             return 1
         if cppmex_mode:
-            sys.stderr.write("Error: -gpu is not supported with -cppmex (C++ MEX API does not support GPU arrays)\n")
-            return 1
+            sys.stderr.write("Note: -cppmex -gpu uses C MEX gateway (mxGPUArray API requires mxArray*)\n")
         ctx.mw_use_gpu = True
 
     if ctx.mw_use_c99_complex or ctx.mw_use_cpp_complex:
@@ -187,6 +186,9 @@ def main():
             if oct_mode:
                 support_text = _load_oct_support()
                 print_oct_init(outcfp, ctx, support_text)
+            elif cppmex_mode and ctx.mw_use_gpu:
+                support_text = _load_support()
+                print_mex_init(outcfp, ctx, support_text)
             elif cppmex_mode:
                 support_text = _load_cpp_support()
                 print_cpp_init(outcfp, ctx, support_text)
@@ -206,6 +208,8 @@ def main():
     if not err_flag and outcfp:
         if oct_mode:
             print_oct_file(outcfp, ctx, parser.funcs, args.octfunc)
+        elif cppmex_mode and ctx.mw_use_gpu:
+            print_mex_file(outcfp, ctx, parser.funcs)
         elif cppmex_mode:
             print_cpp_file(outcfp, ctx, parser.funcs, args.cppfunc)
         else:

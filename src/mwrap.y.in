@@ -352,8 +352,7 @@ int main(int argc, char** argv)
         }
 
         if (mw_cppmex_mode && mw_use_gpu) {
-            fprintf(stderr, "Error: -cppmex and -gpu cannot be used together\n");
-            return 1;
+            fprintf(stderr, "Note: -cppmex -gpu uses C MEX gateway (mxGPUArray API requires mxArray*)\n");
         }
 
         if (mw_use_c99_complex || mw_use_cpp_complex) {
@@ -418,6 +417,8 @@ int main(int argc, char** argv)
                     if (outcfp && !emitted_mex_init) {
                         if (mw_oct_mode)
                             print_oct_init(outcfp);
+                        else if (mw_cppmex_mode && mw_use_gpu)
+                            print_mex_init(outcfp);
                         else if (mw_cppmex_mode)
                             print_cpp_init(outcfp);
                         else
@@ -439,6 +440,8 @@ int main(int argc, char** argv)
     if (!err_flag && outcfp) {
         if (mw_oct_mode)
             print_oct_file(outcfp, funcs, octfunc);
+        else if (mw_cppmex_mode && mw_use_gpu)
+            print_mex_file(outcfp, funcs);
         else if (mw_cppmex_mode)
             print_cpp_file(outcfp, funcs, cppfunc);
         else
