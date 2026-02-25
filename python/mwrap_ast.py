@@ -89,6 +89,7 @@ class Var:
     basetype: str
     qual: Optional[TypeQual]
     name: str
+    nocopy: bool = False
     tinfo: int = VT.unk
     input_label: int = -1
     output_label: int = -1
@@ -288,8 +289,9 @@ def _print_devicespec(v):
 
 
 def _print_iospec(v):
+    prefix = "nocopy " if v.nocopy else ""
     m = {'o': "output ", 'b': "inout "}
-    return m.get(v.iospec, "")
+    return prefix + m.get(v.iospec, "")
 
 
 def _print_var(v):

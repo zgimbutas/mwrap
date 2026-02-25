@@ -1486,10 +1486,10 @@ void mex_dealloc(FILE* fp, Var* v, bool return_flag)
 
     if (v->devicespec != 'g'){
     if (is_array(v->tinfo) || v->tinfo == VT_string) {
-        if (v->iospec == 'o')
+        if (v->iospec == 'o' && !v->nocopy)
             fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
                     v->output_label, v->output_label);
-        else if (v->iospec == 'b' || !(strcmp(v->basetype, "double") == 0 || strcmp(v->basetype, "float") == 0) )
+        else if (!v->nocopy && (v->iospec == 'b' || !(strcmp(v->basetype, "double") == 0 || strcmp(v->basetype, "float") == 0) ))
             fprintf(fp, "    if (in%d_)  mxFree(in%d_);\n",
                     v->input_label, v->input_label);
     } else if (is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {

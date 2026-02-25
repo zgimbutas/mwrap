@@ -66,9 +66,10 @@ struct TypeQual {
 };
 
 struct Var {
-    Var(char devicespec, char iospec, char* basetype, TypeQual* qual, char* name) :
+    Var(char devicespec, char iospec, char* basetype, TypeQual* qual, char* name,
+        bool nocopy = false) :
         devicespec(devicespec), iospec(iospec), basetype(basetype), qual(qual), tinfo(VT_unk),
-        name(name), next(NULL), input_label(-1), output_label(-1) {}
+        name(name), nocopy(nocopy), next(NULL), input_label(-1), output_label(-1) {}
 
     int input_label;  // Index in input arg list
     int output_label; // Index in output arg list
@@ -78,6 +79,7 @@ struct Var {
     TypeQual* qual;   // Type qualifier (pointer, ref, etc)
     int tinfo;        // General type identifier (see VT_* list above)
     char* name;       // MATLAB text for variable name (or value)
+    bool nocopy;      // Zero-copy (nocopy) flag
     Var* next;
 };
 

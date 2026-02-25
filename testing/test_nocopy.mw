@@ -1,0 +1,94 @@
+% Zero-copy (nocopy input/output/inout) test wrappers.
+% Test double, float, dcomplex, fcomplex.
+
+% --- double ---
+$void NocopyTimesTwo_double(double *A, double *B, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) B[i] = 2.0 * A[i];
+$}
+
+$void NocopyInplace_double(double *A, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) A[i] = 3.0 * A[i];
+$}
+
+% --- float ---
+$void NocopyTimesTwo_float(float *A, float *B, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) B[i] = 2.0f * A[i];
+$}
+
+$void NocopyInplace_float(float *A, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) A[i] = 3.0f * A[i];
+$}
+
+% --- dcomplex ---
+$void NocopyTimesTwo_dcomplex(dcomplex *A, dcomplex *B, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) B[i] = 2.0 * A[i];
+$}
+
+$void NocopyInplace_dcomplex(dcomplex *A, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) A[i] = 3.0 * A[i];
+$}
+
+% --- fcomplex ---
+$void NocopyTimesTwo_fcomplex(fcomplex *A, fcomplex *B, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) B[i] = 2.0f * A[i];
+$}
+
+$void NocopyInplace_fcomplex(fcomplex *A, int const N)
+${
+$   int i;
+$   for(i = 0; i<N; i++) A[i] = 3.0f * A[i];
+$}
+
+@function result = nocopy_timestwo_double(a)
+  n = numel(a);
+  # NocopyTimesTwo_double(nocopy input double[] a, nocopy output double[n] result, int n);
+end
+
+@function a = nocopy_inplace_double(a)
+  n = numel(a);
+  # NocopyInplace_double(nocopy inout double[] a, int n);
+end
+
+@function result = nocopy_timestwo_float(a)
+  n = numel(a);
+  # NocopyTimesTwo_float(nocopy input float[] a, nocopy output float[n] result, int n);
+end
+
+@function a = nocopy_inplace_float(a)
+  n = numel(a);
+  # NocopyInplace_float(nocopy inout float[] a, int n);
+end
+
+@function result = nocopy_timestwo_dcomplex(a)
+  n = numel(a);
+  # NocopyTimesTwo_dcomplex(nocopy input dcomplex[] a, nocopy output dcomplex[n] result, int n);
+end
+
+@function a = nocopy_inplace_dcomplex(a)
+  n = numel(a);
+  # NocopyInplace_dcomplex(nocopy inout dcomplex[] a, int n);
+end
+
+@function result = nocopy_timestwo_fcomplex(a)
+  n = numel(a);
+  # NocopyTimesTwo_fcomplex(nocopy input fcomplex[] a, nocopy output fcomplex[n] result, int n);
+end
+
+@function a = nocopy_inplace_fcomplex(a)
+  n = numel(a);
+  # NocopyInplace_fcomplex(nocopy inout fcomplex[] a, int n);
+end

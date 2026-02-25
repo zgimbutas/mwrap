@@ -206,6 +206,8 @@ void print_devicespec(FILE* fp, Var* v)
 
 void print_iospec(FILE* fp, Var* v)
 {
+    if (v->nocopy)
+        fprintf(fp, "nocopy ");
     if (v->iospec == 'o')
         fprintf(fp, "output ");
     else if (v->iospec == 'b')

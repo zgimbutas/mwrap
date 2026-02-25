@@ -308,9 +308,10 @@ class Parser:
         return result
 
     def _var(self):
-        """var ::= [devicespec] [iospec] TYPE [qual] (NAME | NUMBER | STRING)
-           OR:  [devicespec] [iospec] TYPE NAME [aqual]    (post-name array)
+        """var ::= [nocopy] [devicespec] [iospec] TYPE [qual] (NAME | NUMBER | STRING)
+           OR:  [nocopy] [devicespec] [iospec] TYPE NAME [aqual]    (post-name array)
         """
+        nocopy = self._nocopyspec()
         devicespec = self._devicespec()
         iospec = self._iospec()
         basetype = promote_int(self.ctx, self._expect(TokenType.ID).value)
@@ -325,7 +326,7 @@ class Parser:
             # quals before name
             qual = self._quals()
             name = self._name_or_literal()
-            return Var(devicespec, iospec, basetype, qual, name)
+            return Var(devicespec, iospec, basetype, qual, name, nocopy=nocopy)
 
         # NAME/NUMBER/STRING first, then optional aqual
         name = self._name_or_literal()
@@ -333,9 +334,9 @@ class Parser:
         # Check for post-name aqual:  name [ ... ] or name [ ... ] &
         if self._at_punct('['):
             qual = self._aqual()
-            return Var(devicespec, iospec, basetype, qual, name)
+            return Var(devicespec, iospec, basetype, qual, name, nocopy=nocopy)
 
-        return Var(devicespec, iospec, basetype, None, name)
+        return Var(devicespec, iospec, basetype, None, name, nocopy=nocopy)
 
     def _name_or_literal(self):
         tok = self._peek()
@@ -343,6 +344,13 @@ class Parser:
             self._advance()
             return tok.value
         self._error(f"Expected name, number or string, got {tok.type.name} '{tok.value}'")
+
+    def _nocopyspec(self):
+        tok = self._peek()
+        if tok.type == TokenType.NOCOPY:
+            self._advance()
+            return True
+        return False
 
     def _devicespec(self):
         tok = self._peek()

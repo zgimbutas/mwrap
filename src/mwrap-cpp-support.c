@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include <complex>
+#include <memory>
 #include <stdexcept>
 
 using namespace matlab::data;

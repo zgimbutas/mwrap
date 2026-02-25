@@ -25,6 +25,7 @@ class TokenType(Enum):
     INPUT     = auto()
     OUTPUT    = auto()
     INOUT     = auto()
+    NOCOPY    = auto()
     CLASS     = auto()
     TYPEDEF   = auto()
     CPU       = auto()
@@ -40,6 +41,7 @@ KEYWORDS = {
     "input":    TokenType.INPUT,
     "output":   TokenType.OUTPUT,
     "inout":    TokenType.INOUT,
+    "nocopy":   TokenType.NOCOPY,
     "class":    TokenType.CLASS,
     "typedef":  TokenType.TYPEDEF,
     "cpu":      TokenType.CPU,

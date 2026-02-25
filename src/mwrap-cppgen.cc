@@ -314,11 +314,24 @@ static void cpp_declare_in_args(FILE* fp, Var* args)
             if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
                 fprintf(fp, "    %-10s  in%d_ =0; /* %-10s */\n",
                         tb, v->input_label, v->name);
-                /* For arrays, declare a std::vector at function scope */
+                /* For arrays, declare storage at function scope */
                 if (is_array(v->tinfo)) {
                     const CppTypeProps* tp = cpp_type_props(v->basetype);
-                    fprintf(fp, "    std::vector<%s>  vec_in%d_;\n",
-                            tp->scalar_type, v->input_label);
+                    if (v->nocopy && cpp_is_known_type(v->basetype)) {
+                        /* Nocopy: declare unique_ptr<TypedArray> handle (ref-counted, keeps data alive) */
+                        /* TypedArray default ctor is deleted in R2024b+, so wrap in unique_ptr */
+                        CppComplexInfo zinfo;
+                        const char* ta;
+                        if (get_cpp_complex_info(v, &zinfo))
+                            ta = zinfo.typed_array;
+                        else
+                            ta = tp->typed_array;
+                        fprintf(fp, "    std::unique_ptr<%s>  ta_nc_in%d_;\n",
+                                ta, v->input_label);
+                    } else {
+                        fprintf(fp, "    std::vector<%s>  vec_in%d_;\n",
+                                tp->scalar_type, v->input_label);
+                    }
                 }
             } else if (v->tinfo == VT_mx) {
                 fprintf(fp, "    %-10s  in%d_;    /* %-10s */\n",
@@ -342,10 +355,22 @@ static void cpp_declare_out_args(FILE* fp, Var* args)
                 continue;
             }
             const char* tb = cpp_declare_type(v);
-            if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string)
+            if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
                 fprintf(fp, "    %-10s  out%d_=0; /* %-10s */\n",
                         tb, v->output_label, v->name);
-            else
+                /* Nocopy output: declare buffer_ptr_t at function scope */
+                if (v->nocopy && v->iospec == 'o' && is_array(v->tinfo)) {
+                    const CppTypeProps* tp = cpp_type_props(v->basetype);
+                    CppComplexInfo zinfo;
+                    const char* st;
+                    if (get_cpp_complex_info(v, &zinfo))
+                        st = zinfo.scalar_type;
+                    else
+                        st = tp->scalar_type;
+                    fprintf(fp, "    buffer_ptr_t<%s>  buf_out%d_{nullptr, nullptr};\n",
+                            st, v->output_label);
+                }
+            } else
                 fprintf(fp, "    %-10s  out%d_;   /* %-10s */\n",
                         tb, v->output_label, v->name);
         }
@@ -425,8 +450,8 @@ static void cpp_unpack_dims(FILE* fp, Func* f)
 static void cpp_check_dims(FILE* fp, Var* args)
 {
     for (Var* v = args; v; v = v->next) {
-        if (v->iospec != 'o' && is_array(v->tinfo) &&
-            v->qual && v->qual->args) {
+        if (v->iospec != 'o' && !v->nocopy &&
+            is_array(v->tinfo) && v->qual && v->qual->args) {
             Expr* a = v->qual->args;
             if (a->next) {
                 fprintf(fp,
@@ -475,6 +500,34 @@ static void cpp_unpack_input_array(FILE* fp, Var* v)
     const char* bt = v->basetype;
     const CppTypeProps* tp = cpp_type_props(bt);
 
+    /* --- Nocopy path --- */
+    if (v->nocopy && cpp_is_known_type(bt)) {
+        CppComplexInfo zinfo;
+        const char* ate;
+        const char* ta;
+        if (get_cpp_complex_info(v, &zinfo)) {
+            ate = zinfo.array_type_enum;
+            ta = zinfo.typed_array;
+        } else {
+            ate = tp->array_type_enum;
+            ta = tp->typed_array;
+        }
+        fprintf(fp, "    if (args[%d].getNumberOfElements() != 0) {\n", il);
+        fprintf(fp,
+                "        if (args[%d].getType() != %s) {\n"
+                "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
+                "            goto mw_err_label;\n"
+                "        }\n",
+                il, ate, ate);
+        fprintf(fp, "        ta_nc_in%d_ = std::make_unique<%s>(args[%d]);\n", il, ta, il);
+        fprintf(fp, "        in%d_ = (%s*) &(*ta_nc_in%d_->begin());\n", il, bt, il);
+        fprintf(fp,
+                "    } else\n"
+                "        in%d_ = NULL;\n\n", il);
+        return;
+    }
+
+    /* --- Regular (copy) path --- */
     fprintf(fp, "    if (args[%d].getNumberOfElements() != 0) {\n", il);
 
     CppComplexInfo zinfo;
@@ -641,7 +694,29 @@ static void cpp_check_inputs(FILE* fp, Var* args)
 static void cpp_alloc_output(FILE* fp, Var* args)
 {
     for (Var* v = args; v; v = v->next) {
-        if (v->iospec == 'o') {
+        if (v->nocopy && v->iospec == 'o') {
+            /* Nocopy output: allocate MATLAB buffer directly */
+            if (is_array(v->tinfo) && cpp_is_known_type(v->basetype)) {
+                const CppTypeProps* tp = cpp_type_props(v->basetype);
+                CppComplexInfo zinfo;
+                const char* st;
+                if (get_cpp_complex_info(v, &zinfo))
+                    st = zinfo.scalar_type;
+                else
+                    st = tp->scalar_type;
+                fprintf(fp, "    buf_out%d_ = factory.createBuffer<%s>(",
+                        v->output_label, st);
+                cpp_print_alloc_size_expr(fp, v->qual->args);
+                fprintf(fp, ");\n");
+                fprintf(fp, "    out%d_ = (%s*) buf_out%d_.get();\n",
+                        v->output_label, v->basetype, v->output_label);
+            } else if (is_array(v->tinfo)) {
+                /* Unknown type: fall back to regular alloc */
+                fprintf(fp, "    out%d_ = new %s[", v->output_label, v->basetype);
+                cpp_print_alloc_size_expr(fp, v->qual->args);
+                fprintf(fp, "];\n");
+            }
+        } else if (!v->nocopy && v->iospec == 'o') {
             if (is_array(v->tinfo)) {
                 fprintf(fp, "    out%d_ = new %s[", v->output_label, v->basetype);
                 cpp_print_alloc_size_expr(fp, v->qual->args);
@@ -786,6 +861,44 @@ static void cpp_marshal_array(FILE* fp, Var* v)
     const char* n = vname(v, nbuf);
     const CppTypeProps* tp = cpp_type_props(bt);
     Expr* da = v->qual ? v->qual->args : NULL;
+
+    /* --- Nocopy output: wrap pre-allocated buffer into Array --- */
+    if (v->nocopy && v->iospec == 'o' && cpp_is_known_type(bt)) {
+        CppComplexInfo zi;
+        const char* st_nc;
+        if (get_cpp_complex_info(v, &zi))
+            st_nc = zi.scalar_type;
+        else
+            st_nc = tp->scalar_type;
+
+        int ndims_nc = 0;
+        for (Expr* e = da; e; e = e->next) ndims_nc++;
+
+        if (ndims_nc == 0) {
+            fprintf(fp, "    {\n");
+            fprintf(fp, "        size_t nr_ = args[%d].getDimensions()[0];\n", il);
+            fprintf(fp, "        size_t nc_ = args[%d].getDimensions()[1];\n", il);
+            fprintf(fp, "        retval[%d] = factory.createArrayFromBuffer({nr_, nc_}, std::move(buf_out%d_));\n", ol, ol);
+            fprintf(fp, "    }\n");
+        } else if (ndims_nc == 1) {
+            fprintf(fp, "    retval[%d] = factory.createArrayFromBuffer({dim%d_, 1}, std::move(buf_out%d_));\n",
+                    ol, da->input_label, ol);
+        } else if (ndims_nc == 2) {
+            fprintf(fp, "    retval[%d] = factory.createArrayFromBuffer({dim%d_, dim%d_}, std::move(buf_out%d_));\n",
+                    ol, da->input_label, da->next->input_label, ol);
+        } else {
+            fprintf(fp, "    retval[%d] = factory.createArrayFromBuffer({(", ol);
+            cpp_print_alloc_size_expr(fp, da);
+            fprintf(fp, "), 1}, std::move(buf_out%d_));\n", ol);
+        }
+        return;
+    }
+
+    /* --- Nocopy inout: return modified TypedArray via std::move --- */
+    if (v->nocopy && v->iospec == 'b' && cpp_is_known_type(bt)) {
+        fprintf(fp, "    retval[%d] = std::move(*ta_nc_in%d_);\n", ol, il);
+        return;
+    }
 
     /* Determine effective type info for marshalling */
     CppComplexInfo zinfo;
@@ -1011,7 +1124,13 @@ static void cpp_dealloc_var(FILE* fp, Var* vars)
 {
     for (Var* v = vars; v; v = v->next) {
         if (is_array(v->tinfo) || v->tinfo == VT_string) {
-            if (v->iospec == 'o') {
+            if (v->nocopy) {
+                /* Nocopy: MATLAB owns the memory, no dealloc needed.
+                 * Exception: unknown types for nocopy output that fell back to new[] */
+                if (v->iospec == 'o' && !cpp_is_known_type(v->basetype))
+                    fprintf(fp, "    if (out%d_) delete[] out%d_;\n",
+                            v->output_label, v->output_label);
+            } else if (v->iospec == 'o') {
                 fprintf(fp, "    if (out%d_) delete[] out%d_;\n",
                         v->output_label, v->output_label);
             } else if (v->iospec == 'b') {
@@ -1063,7 +1182,8 @@ static int cpp_count_outputs(Func* f)
                 nout = v->output_label + 1;
     }
     for (Var* v = f->args; v; v = v->next)
-        if ((v->iospec == 'o' || v->iospec == 'b') && v->output_label + 1 > nout)
+        if ((v->iospec == 'o' || v->iospec == 'b') &&
+            v->output_label + 1 > nout)
             nout = v->output_label + 1;
     return nout;
 }

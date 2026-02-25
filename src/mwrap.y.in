@@ -103,12 +103,14 @@ inline void add_func(Func* func)
 %token <string> ID 
 %token <string> NUMBER STRING
 %token <char> INPUT OUTPUT INOUT
+%token NOCOPY
 %token <char> CPU GPU
 
 %type <func> func funcall
 %type <var>  var basevar args argsrest
 %type <c>    iospec
 %type <c>    devicespec
+%type <c>    nocopyspec
 %type <qual> quals aqual
 %type <expr> arrayspec exprs exprrest expr
 %type <inherits> inheritslist inheritsrest
@@ -185,17 +187,21 @@ basevar: ID ID               { $$ = new Var('c', 'o', promote_int($1), NULL, $2)
 basevar: ID quals ID         { $$ = new Var('c', 'o', promote_int($1), $2,   $3); }
 basevar: ID ID aqual         { $$ = new Var('c', 'o', promote_int($1), $3,   $2); }
 
-var: devicespec iospec ID ID            { $$ = new Var($1, $2,  promote_int($3), NULL, $4); }
-var: devicespec iospec ID quals ID      { $$ = new Var($1, $2,  promote_int($3), $4,   $5); }
-var: devicespec iospec ID ID aqual      { $$ = new Var($1, $2,  promote_int($3), $5,   $4); }
+var: nocopyspec devicespec iospec ID ID            { $$ = new Var($2, $3,  promote_int($4), NULL, $5, $1); }
+var: nocopyspec devicespec iospec ID quals ID      { $$ = new Var($2, $3,  promote_int($4), $5,   $6, $1); }
+var: nocopyspec devicespec iospec ID ID aqual      { $$ = new Var($2, $3,  promote_int($4), $6,   $5, $1); }
 
-var: devicespec iospec ID NUMBER        { $$ = new Var($1, $2,  promote_int($3), NULL, $4); }
-var: devicespec iospec ID quals NUMBER  { $$ = new Var($1, $2,  promote_int($3), $4,   $5); }
+var: nocopyspec devicespec iospec ID NUMBER        { $$ = new Var($2, $3,  promote_int($4), NULL, $5, $1); }
+var: nocopyspec devicespec iospec ID quals NUMBER  { $$ = new Var($2, $3,  promote_int($4), $5,   $6, $1); }
 
-var: devicespec iospec ID STRING        { $$ = new Var($1, $2,  promote_int($3), NULL, $4); }
-var: devicespec iospec ID quals STRING  { $$ = new Var($1, $2,  promote_int($3), $4,   $5); }
+var: nocopyspec devicespec iospec ID STRING        { $$ = new Var($2, $3,  promote_int($4), NULL, $5, $1); }
+var: nocopyspec devicespec iospec ID quals STRING  { $$ = new Var($2, $3,  promote_int($4), $5,   $6, $1); }
 
-devicespec: 
+nocopyspec:
+  NOCOPY { $$ = 1; }
+  |      { $$ = 0; } ;
+
+devicespec:
   CPU   { $$ = 'c'; }
   | GPU { $$ = 'g'; }
   |     { $$ = 'c'; } ;

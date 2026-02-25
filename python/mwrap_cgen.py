@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from mwrap_ast import (
     VT, Expr, TypeQual, Var, Func,
     id_string, print_func,
-    is_nocopy, iospec_dir, is_array, is_obj, complex_tinfo, nullable_return,
+    is_array, is_obj, complex_tinfo, nullable_return,
 )
 
 
@@ -73,7 +73,7 @@ def basetype_to_mxaccessor(name):
 
 
 def vname(v):
-    if v.iospec == 'o' or v.iospec == 'O':
+    if v.iospec == 'o':
         return f"out{v.output_label}_"
     return f"in{v.input_label}_"
 
@@ -318,7 +318,7 @@ def _declare_type(v):
     if v.tinfo == VT.string:
         return "char*"
     if v.tinfo == VT.mx:
-        if iospec_dir(v.iospec) == 'i':
+        if v.iospec == 'i':
             return "const mxArray*"
         return "mxArray*"
     assert False, f"Unknown tinfo {v.tinfo} for {v.name}"
@@ -328,7 +328,7 @@ def _declare_type(v):
 
 def _declare_in_args(fp, args):
     for v in args:
-        if iospec_dir(v.iospec) != 'o' and v.tinfo != VT.const:
+        if v.iospec != 'o' and v.tinfo != VT.const:
             tb = _declare_type(v)
             if is_array(v.tinfo) or is_obj(v.tinfo) or v.tinfo == VT.string:
                 fp.write(f"    {tb:10s}  in{v.input_label}_ =0; /* {v.name:10s} */\n")
@@ -340,7 +340,7 @@ def _declare_in_args(fp, args):
 
 def _declare_out_args(fp, args):
     for v in args:
-        if v.iospec in ('o', 'O') and v.tinfo != VT.mx:
+        if v.iospec == 'o' and v.tinfo != VT.mx:
             tb = _declare_type(v)
             if is_array(v.tinfo) or is_obj(v.tinfo) or v.tinfo == VT.string:
                 fp.write(f"    {tb:10s}  out{v.output_label}_=0; /* {v.name:10s} */\n")
@@ -404,7 +404,7 @@ def _unpack_dims(fp, f):
 
 def _check_dims(fp, args):
     for v in args:
-        if (iospec_dir(v.iospec) != 'o' and is_array(v.tinfo) and
+        if (v.iospec != 'o' and is_array(v.tinfo) and
                 v.qual and v.qual.args and v.devicespec != 'g'):
             a = v.qual.args
             if len(a) > 1:
@@ -439,7 +439,7 @@ def _unpack_input_array(fp, v):
     bt = v.basetype
 
     # --- Nocopy path ---
-    if v.devicespec != 'g' and is_nocopy(v.iospec):
+    if v.devicespec != 'g' and v.nocopy:
         mxcid = basetype_to_mxclassid(bt)
         accessor = basetype_to_mxaccessor(bt)
         fp.write(f"    if (mxGetM(prhs[{il}])*mxGetN(prhs[{il}]) != 0) {{\n")
@@ -531,7 +531,7 @@ def _unpack_input_string(fp, v):
 
 def _unpack_inputs_var(fp, ctx, args):
     for v in args:
-        if v.iospec in ('o', 'O'):
+        if v.iospec == 'o':
             continue
         if is_obj(v.tinfo):
             _cast_get_p(fp, ctx, v.basetype, v.input_label)
@@ -576,7 +576,7 @@ def _unpack_inputs(fp, ctx, f):
 
 def _check_inputs(fp, args):
     for v in args:
-        if iospec_dir(v.iospec) != 'o' and v.tinfo in (VT.obj, VT.r_obj):
+        if v.iospec != 'o' and v.tinfo in (VT.obj, VT.r_obj):
             fp.write(f"    if (!in{v.input_label}_) {{\n"
                    f"        mw_err_txt_ = \"Argument {v.name} cannot be null\";\n"
                    f"        goto mw_err_label;\n"
@@ -587,7 +587,7 @@ def _check_inputs(fp, args):
 
 def _alloc_output(fp, ctx, args, return_flag):
     for v in args:
-        if v.iospec == 'O':
+        if v.nocopy and v.iospec == 'o':
             # Nocopy output
             if v.devicespec != 'g' and is_array(v.tinfo):
                 da = v.qual.args
@@ -619,7 +619,7 @@ def _alloc_output(fp, ctx, args, return_flag):
                             f"    out{v.output_label}_ = ({v.basetype}*) mxGetData(plhs[{v.output_label}]);\n")
                     else:
                         fp.write(f"    out{v.output_label}_ = ({v.basetype}*) mxGetData(plhs[{v.output_label}]);\n")
-        elif v.iospec == 'o':
+        elif not v.nocopy and v.iospec == 'o':
             if v.devicespec != 'g':
                 if not return_flag and is_obj(v.tinfo) and ctx.is_mxarray_type(v.basetype):
                     fp.write(f"    out{v.output_label}_ = mxWrapAlloc_{v.basetype}();\n")
@@ -665,7 +665,7 @@ def _make_call_args(fp, args, first):
         n = vname(v)
         if v.tinfo in (VT.obj, VT.r_obj):
             fp.write(f"*{n}")
-        elif v.tinfo == VT.mx and iospec_dir(v.iospec) == 'o':
+        elif v.tinfo == VT.mx and v.iospec == 'o':
             fp.write(f"plhs+{v.output_label}")
         elif v.tinfo in (VT.p_scalar, VT.p_cscalar, VT.p_zscalar):
             fp.write(f"&{n}")
@@ -777,7 +777,7 @@ def _marshal_array(fp, v):
     n = vname(v)
 
     # Nocopy output: plhs already set during allocation
-    if v.iospec == 'O' and v.devicespec != 'g':
+    if v.nocopy and v.iospec == 'o' and v.devicespec != 'g':
         if complex_tinfo(v):
             fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n"
                    "    /* nocopy: plhs already set during allocation */\n"
@@ -787,7 +787,7 @@ def _marshal_array(fp, v):
             return
 
     # Nocopy inout: pass through
-    if v.iospec == 'B' and v.devicespec != 'g':
+    if v.nocopy and v.iospec == 'b' and v.devicespec != 'g':
         if complex_tinfo(v):
             fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n"
                    f"    plhs[{ol}] = (mxArray*)prhs[{il}];\n"
@@ -898,7 +898,7 @@ def _marshal_result(fp, ctx, v, return_flag):
 
 def _marshal_results_var(fp, ctx, vars, return_flag):
     for v in vars:
-        if iospec_dir(v.iospec) != 'i':
+        if v.iospec != 'i':
             _marshal_result(fp, ctx, v, return_flag)
 
 
@@ -913,10 +913,10 @@ def _marshal_results(fp, ctx, f):
 def _dealloc_var(fp, ctx, vars, return_flag):
     for v in vars:
         if v.devicespec != 'g':
-            if is_nocopy(v.iospec):
+            if v.nocopy:
                 if complex_tinfo(v):
                     fp.write("#ifndef MX_HAS_INTERLEAVED_COMPLEX\n")
-                    if v.iospec == 'O':
+                    if v.iospec == 'o':
                         fp.write(f"    if (out{v.output_label}_) mxFree(out{v.output_label}_);\n")
                     else:
                         fp.write(f"    if (in{v.input_label}_)  mxFree(in{v.input_label}_);\n")
