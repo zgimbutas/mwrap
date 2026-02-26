@@ -325,10 +325,12 @@ int main(int argc, char** argv)
                 mexfunc = argv[++j];
             else if (strcmp(argv[j], "-oct") == 0 && j+1 < argc) {
                 octfunc = argv[++j];
+                mexfunc = octfunc;
                 mw_oct_mode = true;
             }
             else if (strcmp(argv[j], "-cppmex") == 0 && j+1 < argc) {
                 cppfunc = argv[++j];
+                mexfunc = cppfunc;
                 mw_cppmex_mode = true;
             }
             else if (strcmp(argv[j], "-mb") == 0)

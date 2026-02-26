@@ -570,18 +570,41 @@ static void cpp_unpack_input_array(FILE* fp, Var* v)
 
     CppComplexInfo zinfo;
     if (get_cpp_complex_info(v, &zinfo)) {
-        /* Complex array: use TypedArray<std::complex<T>> */
+        /* Complex array: auto-promote real to complex */
+        const char* ate = zinfo.array_type_enum;
+        const char* st = zinfo.scalar_type;
+        const char* ta = zinfo.typed_array;
+        const char* real_ate;
+        const char* real_ta;
+        if (v->tinfo == VT_zarray) {
+            real_ate = "ArrayType::DOUBLE";
+            real_ta = "TypedArray<double>";
+        } else {
+            real_ate = "ArrayType::SINGLE";
+            real_ta = "TypedArray<float>";
+        }
         fprintf(fp,
-                "        if (args[%d].getType() != %s) {\n"
-                "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
+                "        if (args[%d].getType() == %s) {\n"
+                "            %s ta_in%d_ = args[%d];\n"
+                "            vec_in%d_.assign(ta_in%d_.begin(), ta_in%d_.end());\n"
+                "            in%d_ = (%s*) vec_in%d_.data();\n"
+                "        } else if (args[%d].getType() == %s) {\n"
+                "            %s ta_real_ = args[%d];\n"
+                "            vec_in%d_.reserve(ta_real_.getNumberOfElements());\n"
+                "            for (auto v_ : ta_real_) vec_in%d_.push_back(%s(v_, 0));\n"
+                "            in%d_ = (%s*) vec_in%d_.data();\n"
+                "        } else {\n"
+                "            mw_err_txt_ = \"Invalid array argument, numeric type expected\";\n"
                 "            goto mw_err_label;\n"
                 "        }\n",
-                il, zinfo.array_type_enum, zinfo.array_type_enum);
-        fprintf(fp, "        %s ta_in%d_ = args[%d];\n",
-                zinfo.typed_array, il, il);
-        fprintf(fp, "        vec_in%d_.assign(ta_in%d_.begin(), ta_in%d_.end());\n",
-                il, il, il);
-        fprintf(fp, "        in%d_ = (%s*) vec_in%d_.data();\n",
+                il, ate,
+                ta, il, il,
+                il, il, il,
+                il, bt, il,
+                il, real_ate,
+                real_ta, il,
+                il,
+                il, st,
                 il, bt, il);
     } else if (cpp_is_known_type(bt)) {
         /* Known scalar types: type check + copy via iterators */
