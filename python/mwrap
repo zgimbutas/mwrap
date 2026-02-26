@@ -64,14 +64,14 @@ def _load_support():
 
 def _load_cpp_support():
     """Load the runtime support header for C++ MEX API."""
-    support_path = os.path.join(_script_dir, "mwrap_cpp_support.h")
+    support_path = os.path.join(_script_dir, "mwrap_cpp_support.c")
     with open(support_path, "r") as f:
         return f.read()
 
 
 def _load_oct_support():
     """Load the runtime support header for oct-files."""
-    support_path = os.path.join(_script_dir, "mwrap_oct_support.h")
+    support_path = os.path.join(_script_dir, "mwrap_oct_support.c")
     with open(support_path, "r") as f:
         return f.read()
 

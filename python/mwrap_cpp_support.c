@@ -26,6 +26,9 @@
  *
  * C++ MEX API backend by Zydrunas Gimbutas (2026),
  * with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
+ *
+ * Compatibility: MATLAB R2018a+.  Nocopy inputs use std::unique_ptr to
+ * wrap TypedArray, avoiding the deleted default constructor in R2024b+.
  */
 
 #include "mex.hpp"

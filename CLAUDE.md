@@ -59,8 +59,8 @@ The processing pipeline for both C++ and Python versions is: **Lexer → Parser 
 - `mwrap_cppgen.py` — MATLAB C++ MEX API code generator (parallel to `mwrap-cppgen.cc`)
 - `mwrap_octgen.py` — Octave oct-file code generator (parallel to `mwrap-octgen.cc`)
 - `mwrap_support.c` — runtime support file for C MEX backend
-- `mwrap_cpp_support.h` — runtime support for C++ MEX API backend
-- `mwrap_oct_support.h` — runtime support for Octave oct-file backend
+- `mwrap_cpp_support.c` — runtime support for C++ MEX API backend
+- `mwrap_oct_support.c` — runtime support for Octave oct-file backend
 
 ### Key data structures
 - **`VT` enum** (in `mwrap_ast.py` / implicit in C++) — classifies variable types: scalar, array, complex, object, pointer, reference, string, mxArray, GPU variants. The `Var` node also carries a `nocopy` field for zero-copy array passing.

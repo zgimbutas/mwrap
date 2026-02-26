@@ -50,8 +50,8 @@ Key flags:
 | `mwrap_cppgen.py` | MATLAB C++ MEX API code generator |
 | `mwrap_octgen.py` | Octave oct-file (DEFUN_DLD) code generator |
 | `mwrap_support.c` | Runtime support library for C MEX backend |
-| `mwrap_cpp_support.h` | Runtime support for C++ MEX API backend |
-| `mwrap_oct_support.h` | Runtime support for Octave oct-file backend |
+| `mwrap_cpp_support.c` | Runtime support for C++ MEX API backend |
+| `mwrap_oct_support.c` | Runtime support for Octave oct-file backend |
 
 ## License
 

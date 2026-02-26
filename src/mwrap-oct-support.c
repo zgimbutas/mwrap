@@ -26,6 +26,9 @@
  *
  * Oct-file backend by Zydrunas Gimbutas (2026),
  * with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
+ *
+ * Compatibility: Octave 4.0+.  We use fortran_vec() rather than rwdata()
+ * for mutable array access to support Octave versions prior to 10.1.
  */
 
 #include <octave/oct.h>

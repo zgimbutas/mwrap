@@ -391,7 +391,7 @@ def _unpack_input_array(fp, v):
         if v.iospec == 'i':
             fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.data();\n")
         else:
-            fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.rwdata();\n")
+            fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.fortran_vec();\n")
     elif bt in OCT_TYPE_PROPS:
         # Known scalar types: type check + matrix_value
         fp.write(f"        if (!args({il}).{tp.type_check}()) {{\n"
@@ -403,7 +403,7 @@ def _unpack_input_array(fp, v):
             fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.data();\n")
         else:
             fp.write(f"        mat_in{il}_ = args({il}).{tp.array_getter}();\n")
-            fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.rwdata();\n")
+            fp.write(f"        in{il}_ = ({bt}*) mat_in{il}_.fortran_vec();\n")
     else:
         # Unknown types: copy through double matrix
         fp.write(f"        Matrix mat_in{il}_ = args({il}).matrix_value();\n")
@@ -520,7 +520,7 @@ def _alloc_output(fp, ctx, args, return_flag):
                     else:
                         sz = _alloc_size_expr(da)
                         fp.write(f"    mat_out{v.output_label}_ = {eff_mat_type}({sz}, 1);\n")
-                    fp.write(f"    out{v.output_label}_ = ({bt}*) mat_out{v.output_label}_.rwdata();\n")
+                    fp.write(f"    out{v.output_label}_ = ({bt}*) mat_out{v.output_label}_.fortran_vec();\n")
                 else:
                     # Unknown type: fall back to new[]
                     fp.write(f"    out{v.output_label}_ = new {bt}[{_alloc_size_expr(v.qual.args)}];\n")
@@ -686,14 +686,14 @@ def _marshal_array(fp, v):
         if known_type:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_(args({il}).rows(), args({il}).columns());\n")
-            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), in{il}_, args({il}).numel()*sizeof({bt}));\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.fortran_vec(), in{il}_, args({il}).numel()*sizeof({bt}));\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
             fp.write(f"{ws}}}\n")
         else:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    octave_idx_type n_ = args({il}).numel();\n")
             fp.write(f"{ws}    Matrix mat_out{ol}_(args({il}).rows(), args({il}).columns());\n")
-            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.rwdata();\n")
+            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.fortran_vec();\n")
             fp.write(f"{ws}    for (octave_idx_type i_ = 0; i_ < n_; ++i_)\n")
             fp.write(f"{ws}        dst_[i_] = (double) in{il}_[i_];\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
@@ -703,13 +703,13 @@ def _marshal_array(fp, v):
         if known_type:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_(dim{da[0].input_label}_, 1);\n")
-            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), {n}, dim{da[0].input_label}_*sizeof({bt}));\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.fortran_vec(), {n}, dim{da[0].input_label}_*sizeof({bt}));\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
             fp.write(f"{ws}}}\n")
         else:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    Matrix mat_out{ol}_(dim{da[0].input_label}_, 1);\n")
-            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.rwdata();\n")
+            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.fortran_vec();\n")
             fp.write(f"{ws}    for (octave_idx_type i_ = 0; i_ < dim{da[0].input_label}_; ++i_)\n")
             fp.write(f"{ws}        dst_[i_] = (double) {n}[i_];\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
@@ -719,14 +719,14 @@ def _marshal_array(fp, v):
         if known_type:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_(dim{da[0].input_label}_, dim{da[1].input_label}_);\n")
-            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), {n}, dim{da[0].input_label}_*dim{da[1].input_label}_*sizeof({bt}));\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.fortran_vec(), {n}, dim{da[0].input_label}_*dim{da[1].input_label}_*sizeof({bt}));\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
             fp.write(f"{ws}}}\n")
         else:
             sz = f"dim{da[0].input_label}_*dim{da[1].input_label}_"
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    Matrix mat_out{ol}_(dim{da[0].input_label}_, dim{da[1].input_label}_);\n")
-            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.rwdata();\n")
+            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.fortran_vec();\n")
             fp.write(f"{ws}    for (octave_idx_type i_ = 0; i_ < {sz}; ++i_)\n")
             fp.write(f"{ws}        dst_[i_] = (double) {n}[i_];\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
@@ -737,13 +737,13 @@ def _marshal_array(fp, v):
         if known_type:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    {eff_mat_type} mat_out{ol}_({sz}, 1);\n")
-            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.rwdata(), {n}, ({sz})*sizeof({bt}));\n")
+            fp.write(f"{ws}    std::memcpy(mat_out{ol}_.fortran_vec(), {n}, ({sz})*sizeof({bt}));\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
             fp.write(f"{ws}}}\n")
         else:
             fp.write(f"{ws}{{\n")
             fp.write(f"{ws}    Matrix mat_out{ol}_({sz}, 1);\n")
-            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.rwdata();\n")
+            fp.write(f"{ws}    double* dst_ = mat_out{ol}_.fortran_vec();\n")
             fp.write(f"{ws}    for (octave_idx_type i_ = 0; i_ < {sz}; ++i_)\n")
             fp.write(f"{ws}        dst_[i_] = (double) {n}[i_];\n")
             fp.write(f"{ws}    retval({ol}) = mat_out{ol}_;\n")
