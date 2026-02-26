@@ -322,12 +322,18 @@ static void cpp_declare_in_args(FILE* fp, Var* args)
                         /* TypedArray default ctor is deleted in R2024b+, so wrap in unique_ptr */
                         CppComplexInfo zinfo;
                         const char* ta;
-                        if (get_cpp_complex_info(v, &zinfo))
+                        if (get_cpp_complex_info(v, &zinfo)) {
                             ta = zinfo.typed_array;
-                        else
+                            /* Also declare vec_ for real-to-complex fallback */
+                            fprintf(fp, "    std::unique_ptr<%s>  ta_nc_in%d_;\n",
+                                    ta, v->input_label);
+                            fprintf(fp, "    std::vector<%s>  vec_in%d_;\n",
+                                    tp->scalar_type, v->input_label);
+                        } else {
                             ta = tp->typed_array;
-                        fprintf(fp, "    std::unique_ptr<%s>  ta_nc_in%d_;\n",
-                                ta, v->input_label);
+                            fprintf(fp, "    std::unique_ptr<%s>  ta_nc_in%d_;\n",
+                                    ta, v->input_label);
+                        }
                     } else {
                         fprintf(fp, "    std::vector<%s>  vec_in%d_;\n",
                                 tp->scalar_type, v->input_label);
@@ -503,24 +509,56 @@ static void cpp_unpack_input_array(FILE* fp, Var* v)
     /* --- Nocopy path --- */
     if (v->nocopy && cpp_is_known_type(bt)) {
         CppComplexInfo zinfo;
-        const char* ate;
-        const char* ta;
         if (get_cpp_complex_info(v, &zinfo)) {
-            ate = zinfo.array_type_enum;
-            ta = zinfo.typed_array;
+            /* Complex nocopy: auto-promote real to complex */
+            const char* ate = zinfo.array_type_enum;
+            const char* st = zinfo.scalar_type;
+            const char* ta = zinfo.typed_array;
+            const char* real_ate;
+            const char* real_ta;
+            if (v->tinfo == VT_zarray) {
+                real_ate = "ArrayType::DOUBLE";
+                real_ta = "TypedArray<double>";
+            } else {
+                real_ate = "ArrayType::SINGLE";
+                real_ta = "TypedArray<float>";
+            }
+            fprintf(fp, "    if (args[%d].getNumberOfElements() != 0) {\n", il);
+            fprintf(fp,
+                    "        if (args[%d].getType() == %s) {\n"
+                    "            ta_nc_in%d_ = std::make_unique<%s>(args[%d]);\n"
+                    "            in%d_ = (%s*) &(*ta_nc_in%d_->begin());\n"
+                    "        } else if (args[%d].getType() == %s) {\n"
+                    "            %s ta_real_ = args[%d];\n"
+                    "            vec_in%d_.reserve(ta_real_.getNumberOfElements());\n"
+                    "            for (auto v_ : ta_real_) vec_in%d_.push_back(%s(v_, 0));\n"
+                    "            in%d_ = (%s*) vec_in%d_.data();\n"
+                    "        } else {\n"
+                    "            mw_err_txt_ = \"Invalid array argument, numeric type expected\";\n"
+                    "            goto mw_err_label;\n"
+                    "        }\n",
+                    il, ate,
+                    il, ta, il,
+                    il, bt, il,
+                    il, real_ate,
+                    real_ta, il,
+                    il,
+                    il, st,
+                    il, bt, il);
         } else {
-            ate = tp->array_type_enum;
-            ta = tp->typed_array;
+            /* Non-complex nocopy: strict type check */
+            const char* ate = tp->array_type_enum;
+            const char* ta = tp->typed_array;
+            fprintf(fp, "    if (args[%d].getNumberOfElements() != 0) {\n", il);
+            fprintf(fp,
+                    "        if (args[%d].getType() != %s) {\n"
+                    "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
+                    "            goto mw_err_label;\n"
+                    "        }\n",
+                    il, ate, ate);
+            fprintf(fp, "        ta_nc_in%d_ = std::make_unique<%s>(args[%d]);\n", il, ta, il);
+            fprintf(fp, "        in%d_ = (%s*) &(*ta_nc_in%d_->begin());\n", il, bt, il);
         }
-        fprintf(fp, "    if (args[%d].getNumberOfElements() != 0) {\n", il);
-        fprintf(fp,
-                "        if (args[%d].getType() != %s) {\n"
-                "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
-                "            goto mw_err_label;\n"
-                "        }\n",
-                il, ate, ate);
-        fprintf(fp, "        ta_nc_in%d_ = std::make_unique<%s>(args[%d]);\n", il, ta, il);
-        fprintf(fp, "        in%d_ = (%s*) &(*ta_nc_in%d_->begin());\n", il, bt, il);
         fprintf(fp,
                 "    } else\n"
                 "        in%d_ = NULL;\n\n", il);

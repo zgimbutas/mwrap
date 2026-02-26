@@ -356,6 +356,17 @@ static void declare_out_args(FILE* fp, Var* args)
             else
                 fprintf(fp, "    %-10s  out%d_;   /* %-10s */\n",
                         tb, v->output_label, v->name);
+            /* Nocopy output: declare backing Matrix at function scope */
+            if (v->nocopy && is_array(v->tinfo)) {
+                ComplexMatrixInfo zinfo;
+                if (get_complex_matrix_info(v, &zinfo))
+                    fprintf(fp, "    %s  mat_out%d_;\n",
+                            zinfo.matrix_type, v->output_label);
+                else if (oct_is_known_type(v->basetype))
+                    fprintf(fp, "    %s  mat_out%d_;\n",
+                            oct_type_props(v->basetype)->matrix_type,
+                            v->output_label);
+            }
         }
     }
 }
@@ -487,20 +498,39 @@ static void unpack_input_array(FILE* fp, Var* v)
 
     ComplexMatrixInfo zinfo;
     if (get_complex_matrix_info(v, &zinfo)) {
-        /* Complex array: use ComplexMatrix/FloatComplexMatrix */
+        /* Complex array: auto-promote real to complex when needed.
+         * Octave's iscomplex() returns false for arrays whose imaginary
+         * part is all-zero (unlike MATLAB), so we accept real arrays
+         * and promote them. */
+        const char* real_type_check;
+        const char* real_getter;
+        if (v->tinfo == VT_carray) {
+            /* fcomplex: checker is is_single_type (precision, not complexity) */
+            real_type_check = "is_single_type";
+            real_getter = "float_matrix_value";
+        } else {
+            /* dcomplex: need explicit real-to-complex promotion */
+            real_type_check = "is_double_type";
+            real_getter = "matrix_value";
+        }
         fprintf(fp,
-                "        if (!args(%d).%s()) {\n"
-                "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
+                "        if (args(%d).%s()) {\n"
+                "            mat_in%d_ = args(%d).%s();\n"
+                "        } else if (args(%d).%s()) {\n"
+                "            mat_in%d_ = %s(args(%d).%s());\n"
+                "        } else {\n"
+                "            mw_err_txt_ = \"Invalid array argument, numeric type expected\";\n"
                 "            goto mw_err_label;\n"
                 "        }\n",
-                il, zinfo.type_check, zinfo.type_check);
-        fprintf(fp, "        mat_in%d_ = args(%d).%s();\n",
-                il, il, zinfo.array_getter);
+                il, zinfo.type_check,
+                il, il, zinfo.array_getter,
+                il, real_type_check,
+                il, zinfo.matrix_type, il, real_getter);
         if (v->iospec == 'i')
             fprintf(fp, "        in%d_ = (%s*) mat_in%d_.data();\n",
                     il, bt, il);
         else
-            fprintf(fp, "        in%d_ = (%s*) mat_in%d_.rwdata();\n",
+            fprintf(fp, "        in%d_ = (%s*) mat_in%d_.fortran_vec();\n",
                     il, bt, il);
     } else if (oct_is_known_type(bt)) {
         /* Known scalar types: type check + matrix_value */
@@ -518,7 +548,7 @@ static void unpack_input_array(FILE* fp, Var* v)
         } else {
             fprintf(fp, "        mat_in%d_ = args(%d).%s();\n",
                     il, il, tp->array_getter);
-            fprintf(fp, "        in%d_ = (%s*) mat_in%d_.rwdata();\n",
+            fprintf(fp, "        in%d_ = (%s*) mat_in%d_.fortran_vec();\n",
                     il, bt, il);
         }
     } else {
@@ -643,7 +673,43 @@ static void alloc_output(FILE* fp, Var* args)
 {
     for (Var* v = args; v; v = v->next) {
         if (v->iospec == 'o') {
-            if (is_array(v->tinfo)) {
+            if (v->nocopy && is_array(v->tinfo)) {
+                /* Nocopy output: allocate backing Matrix, point into its data */
+                ComplexMatrixInfo zinfo;
+                const char* eff_mat_type;
+                bool known = false;
+                if (get_complex_matrix_info(v, &zinfo)) {
+                    eff_mat_type = zinfo.matrix_type;
+                    known = true;
+                } else if (oct_is_known_type(v->basetype)) {
+                    eff_mat_type = oct_type_props(v->basetype)->matrix_type;
+                    known = true;
+                }
+                if (known) {
+                    Expr* da = v->qual ? v->qual->args : NULL;
+                    int ndims = 0;
+                    for (Expr* e = da; e; e = e->next) ndims++;
+                    if (ndims == 1) {
+                        fprintf(fp, "    mat_out%d_ = %s(dim%d_, 1);\n",
+                                v->output_label, eff_mat_type, da->input_label);
+                    } else if (ndims == 2) {
+                        fprintf(fp, "    mat_out%d_ = %s(dim%d_, dim%d_);\n",
+                                v->output_label, eff_mat_type,
+                                da->input_label, da->next->input_label);
+                    } else {
+                        fprintf(fp, "    mat_out%d_ = %s(", v->output_label, eff_mat_type);
+                        print_alloc_size_expr(fp, da);
+                        fprintf(fp, ", 1);\n");
+                    }
+                    fprintf(fp, "    out%d_ = (%s*) mat_out%d_.fortran_vec();\n",
+                            v->output_label, v->basetype, v->output_label);
+                } else {
+                    /* Unknown type: fall back to new[] */
+                    fprintf(fp, "    out%d_ = new %s[", v->output_label, v->basetype);
+                    print_alloc_size_expr(fp, v->qual->args);
+                    fprintf(fp, "];\n");
+                }
+            } else if (is_array(v->tinfo)) {
                 fprintf(fp, "    out%d_ = new %s[", v->output_label, v->basetype);
                 print_alloc_size_expr(fp, v->qual->args);
                 fprintf(fp, "];\n");
@@ -803,6 +869,18 @@ static void marshal_array(FILE* fp, Var* v)
         known_type = false;
     }
 
+    /* Nocopy output: Matrix was pre-allocated, just assign */
+    if (v->nocopy && v->iospec == 'o' && is_array(v->tinfo) && known_type) {
+        fprintf(fp, "    retval(%d) = mat_out%d_;\n", ol, ol);
+        return;
+    }
+
+    /* Nocopy inout: function modified data in-place, return the input Matrix */
+    if (v->nocopy && v->iospec == 'b' && known_type) {
+        fprintf(fp, "    retval(%d) = mat_in%d_;\n", ol, il);
+        return;
+    }
+
     const char* ws;
     if (v->tinfo == VT_rarray) {
         fprintf(fp, "    if (out%d_ == NULL) {\n", ol);
@@ -823,7 +901,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    %s mat_out%d_(args(%d).rows(), args(%d).columns());\n",
                     ws, eff_mat_type, ol, il, il);
-            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), in%d_, args(%d).numel()*sizeof(%s));\n",
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.fortran_vec(), in%d_, args(%d).numel()*sizeof(%s));\n",
                     ws, ol, il, il, bt);
             fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
             fprintf(fp, "%s}\n", ws);
@@ -832,7 +910,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s    octave_idx_type n_ = args(%d).numel();\n", ws, il);
             fprintf(fp, "%s    Matrix mat_out%d_(args(%d).rows(), args(%d).columns());\n",
                     ws, ol, il, il);
-            fprintf(fp, "%s    double* dst_ = mat_out%d_.rwdata();\n", ws, ol);
+            fprintf(fp, "%s    double* dst_ = mat_out%d_.fortran_vec();\n", ws, ol);
             fprintf(fp, "%s    for (octave_idx_type i_ = 0; i_ < n_; ++i_)\n", ws);
             fprintf(fp, "%s        dst_[i_] = (double) in%d_[i_];\n", ws, il);
             fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
@@ -844,7 +922,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    %s mat_out%d_(dim%d_, 1);\n",
                     ws, eff_mat_type, ol, da->input_label);
-            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), %s, dim%d_*sizeof(%s));\n",
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.fortran_vec(), %s, dim%d_*sizeof(%s));\n",
                     ws, ol, n, da->input_label, bt);
             fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
             fprintf(fp, "%s}\n", ws);
@@ -852,7 +930,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    Matrix mat_out%d_(dim%d_, 1);\n",
                     ws, ol, da->input_label);
-            fprintf(fp, "%s    double* dst_ = mat_out%d_.rwdata();\n", ws, ol);
+            fprintf(fp, "%s    double* dst_ = mat_out%d_.fortran_vec();\n", ws, ol);
             fprintf(fp, "%s    for (octave_idx_type i_ = 0; i_ < dim%d_; ++i_)\n",
                     ws, da->input_label);
             fprintf(fp, "%s        dst_[i_] = (double) %s[i_];\n", ws, n);
@@ -865,7 +943,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    %s mat_out%d_(dim%d_, dim%d_);\n",
                     ws, eff_mat_type, ol, da->input_label, da->next->input_label);
-            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), %s, dim%d_*dim%d_*sizeof(%s));\n",
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.fortran_vec(), %s, dim%d_*dim%d_*sizeof(%s));\n",
                     ws, ol, n, da->input_label, da->next->input_label, bt);
             fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
             fprintf(fp, "%s}\n", ws);
@@ -873,7 +951,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s{\n", ws);
             fprintf(fp, "%s    Matrix mat_out%d_(dim%d_, dim%d_);\n",
                     ws, ol, da->input_label, da->next->input_label);
-            fprintf(fp, "%s    double* dst_ = mat_out%d_.rwdata();\n", ws, ol);
+            fprintf(fp, "%s    double* dst_ = mat_out%d_.fortran_vec();\n", ws, ol);
             fprintf(fp, "%s    for (octave_idx_type i_ = 0; i_ < dim%d_*dim%d_; ++i_)\n",
                     ws, da->input_label, da->next->input_label);
             fprintf(fp, "%s        dst_[i_] = (double) %s[i_];\n", ws, n);
@@ -887,7 +965,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s    %s mat_out%d_(", ws, eff_mat_type, ol);
             print_alloc_size_expr(fp, da);
             fprintf(fp, ", 1);\n");
-            fprintf(fp, "%s    std::memcpy(mat_out%d_.rwdata(), %s, (", ws, ol, n);
+            fprintf(fp, "%s    std::memcpy(mat_out%d_.fortran_vec(), %s, (", ws, ol, n);
             print_alloc_size_expr(fp, da);
             fprintf(fp, ")*sizeof(%s));\n", bt);
             fprintf(fp, "%s    retval(%d) = mat_out%d_;\n", ws, ol, ol);
@@ -897,7 +975,7 @@ static void marshal_array(FILE* fp, Var* v)
             fprintf(fp, "%s    Matrix mat_out%d_(", ws, ol);
             print_alloc_size_expr(fp, da);
             fprintf(fp, ", 1);\n");
-            fprintf(fp, "%s    double* dst_ = mat_out%d_.rwdata();\n", ws, ol);
+            fprintf(fp, "%s    double* dst_ = mat_out%d_.fortran_vec();\n", ws, ol);
             fprintf(fp, "%s    for (octave_idx_type i_ = 0; i_ < ", ws);
             print_alloc_size_expr(fp, da);
             fprintf(fp, "; ++i_)\n");
@@ -967,7 +1045,15 @@ static void dealloc_var(FILE* fp, Var* vars)
 {
     for (Var* v = vars; v; v = v->next) {
         if (is_array(v->tinfo) || v->tinfo == VT_string) {
-            if (v->iospec == 'o') {
+            if (v->nocopy && v->iospec == 'o' && is_array(v->tinfo)) {
+                /* Nocopy output: memory owned by Matrix, no dealloc needed.
+                 * Exception: unknown types that fell back to new[] */
+                ComplexMatrixInfo zinfo;
+                if (!oct_is_known_type(v->basetype) &&
+                    !get_complex_matrix_info(v, &zinfo))
+                    fprintf(fp, "    if (out%d_) delete[] out%d_;\n",
+                            v->output_label, v->output_label);
+            } else if (v->iospec == 'o') {
                 fprintf(fp, "    if (out%d_) delete[] out%d_;\n",
                         v->output_label, v->output_label);
             } else if (v->iospec == 'b') {

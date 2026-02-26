@@ -888,7 +888,8 @@ def _marshal_result(fp, ctx, v, return_flag):
                      VT.p_cscalar, VT.p_zscalar):
         _interleaved_branch(fp,
             f"    plhs[{ol}] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
-            f"    *mxGetComplexDoubles(plhs[{ol}]) = {n};\n",
+            f"    mxGetComplexDoubles(plhs[{ol}])->real = real_{bt}({n});\n"
+            f"    mxGetComplexDoubles(plhs[{ol}])->imag = imag_{bt}({n});\n",
             f"    plhs[{ol}] = mxCreateDoubleMatrix(1, 1, mxCOMPLEX);\n"
             f"    *mxGetPr(plhs[{ol}]) = real_{bt}({n});\n"
             f"    *mxGetPi(plhs[{ol}]) = imag_{bt}({n});\n")

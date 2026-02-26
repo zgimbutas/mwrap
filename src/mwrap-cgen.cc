@@ -46,6 +46,32 @@ char *basetype_to_mxclassid(const char* name)
 
 
 /*
+ * map type to interleaved complex API accessor (or NULL if not available)
+ */
+char *basetype_to_mxaccessor(const char* name)
+{
+  if( strcmp(name,"double") == 0 )    return strdup("mxGetDoubles");
+  if( strcmp(name,"float") == 0 )     return strdup("mxGetSingles");
+  if( strcmp(name,"int32_t") == 0 )   return strdup("mxGetInt32s");
+  if( strcmp(name,"int64_t") == 0 )   return strdup("mxGetInt64s");
+  if( strcmp(name,"uint32_t") == 0 )  return strdup("mxGetUint32s");
+  if( strcmp(name,"uint64_t") == 0 )  return strdup("mxGetUint64s");
+  if( strcmp(name,"dcomplex") == 0 )  return strdup("mxGetComplexDoubles");
+  if( strcmp(name,"fcomplex") == 0 )  return strdup("mxGetComplexSingles");
+  return NULL;
+}
+
+
+/*
+ * Check whether a basetype is single precision (float/fcomplex)
+ */
+bool is_single_basetype(const char* name)
+{
+  return (strcmp(name,"float") == 0 || strcmp(name,"fcomplex") == 0);
+}
+
+
+/*
  * Check whether a tinfo is an array type
  */
 bool is_array(int tinfo)
@@ -794,6 +820,55 @@ void mex_alloc_size(FILE* fp, Expr* e)
 
 void mex_unpack_input_array(FILE* fp, Var* v)
 {
+    /* --- Nocopy path --- */
+    if (v->devicespec != 'g' && v->nocopy) {
+        int il = v->input_label;
+        const char* bt = v->basetype;
+        char* mxcid = basetype_to_mxclassid(bt);
+        char* accessor = basetype_to_mxaccessor(bt);
+        fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n", il, il);
+        fprintf(fp,
+                "        if( mxGetClassID(prhs[%d]) != %s )\n"
+                "            mw_err_txt_ = \"Invalid array argument, %s expected\";\n"
+                "        if (mw_err_txt_) goto mw_err_label;\n",
+                il, mxcid, mxcid);
+        if (accessor && complex_tinfo(v)) {
+            /* Complex nocopy: interleaved uses typed accessor, else fallback to copy */
+            const char* cs = is_single_basetype(bt) ? "single_" : "";
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "        in%d_ = (%s*) %s(prhs[%d]);\n"
+                    "#else\n"
+                    "        mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
+                    "            \"Zero-copy complex requires interleaved complex; falling back to copy\");\n"
+                    "        in%d_ = mxWrapGetArray_%s%s(prhs[%d], &mw_err_txt_);\n"
+                    "        if (mw_err_txt_) goto mw_err_label;\n"
+                    "#endif\n",
+                    il, bt, accessor, il,
+                    il, cs, bt, il);
+        } else if (accessor) {
+            /* Non-complex nocopy: interleaved uses typed accessor, else mxGetData */
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "        in%d_ = (%s*) %s(prhs[%d]);\n"
+                    "#else\n"
+                    "        in%d_ = (%s*) mxGetData(prhs[%d]);\n"
+                    "#endif\n",
+                    il, bt, accessor, il,
+                    il, bt, il);
+        } else {
+            /* No accessor: use mxGetData */
+            fprintf(fp, "        in%d_ = (%s*) mxGetData(prhs[%d]);\n", il, bt, il);
+        }
+        fprintf(fp,
+                "    } else\n"
+                "        in%d_ = NULL;\n\n", il);
+        free(mxcid);
+        free(accessor);
+        return;
+    }
+
+    /* --- Regular (copy) path for CPU --- */
     if (v->devicespec != 'g'){
     fprintf(fp, "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 0) {\n",
             v->input_label, v->input_label);
@@ -1037,7 +1112,58 @@ void mex_alloc_output(FILE* fp, Var* v, bool return_flag)
     if (!v)
         return;
     if (v->iospec == 'o') {
-        if (v->devicespec != 'g'){
+        if (v->devicespec != 'g' && v->nocopy && is_array(v->tinfo)){
+            /* Nocopy output: create mxArray and point into its data */
+            Expr* e = v->qual->args;
+            const char* mxcid = basetype_to_mxclassid(v->basetype);
+            char* accessor = basetype_to_mxaccessor(v->basetype);
+            const char* mtype = complex_tinfo(v) ? "mxCOMPLEX" : "mxREAL";
+            if (accessor && complex_tinfo(v)) {
+                fprintf(fp, "#if MX_HAS_INTERLEAVED_COMPLEX\n");
+                if (e && e->next && !e->next->next)
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
+                            v->output_label, e->input_label, e->next->input_label, mxcid, mtype);
+                else {
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(", v->output_label);
+                    mex_alloc_size(fp, e);
+                    fprintf(fp, ", 1, %s, %s);\n", mxcid, mtype);
+                }
+                fprintf(fp, "    out%d_ = (%s*) %s(plhs[%d]);\n",
+                        v->output_label, v->basetype, accessor, v->output_label);
+                fprintf(fp,
+                        "#else\n"
+                        "    mexWarnMsgIdAndTxt(\"mwrap:nocopy_complex\",\n"
+                        "        \"Zero-copy complex requires interleaved complex; falling back to copy\");\n");
+                fprintf(fp, "    out%d_ = (%s*) mxMalloc(", v->output_label, v->basetype);
+                mex_alloc_size(fp, e);
+                fprintf(fp, "*sizeof(%s));\n", v->basetype);
+                fprintf(fp, "#endif\n");
+            } else {
+                /* Non-complex nocopy output */
+                if (e && e->next && !e->next->next)
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(dim%d_, dim%d_, %s, %s);\n",
+                            v->output_label, e->input_label, e->next->input_label, mxcid, mtype);
+                else {
+                    fprintf(fp, "    plhs[%d] = mxCreateNumericMatrix(", v->output_label);
+                    mex_alloc_size(fp, e);
+                    fprintf(fp, ", 1, %s, %s);\n", mxcid, mtype);
+                }
+                if (accessor) {
+                    fprintf(fp,
+                            "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                            "    out%d_ = (%s*) %s(plhs[%d]);\n"
+                            "#else\n"
+                            "    out%d_ = (%s*) mxGetData(plhs[%d]);\n"
+                            "#endif\n",
+                            v->output_label, v->basetype, accessor, v->output_label,
+                            v->output_label, v->basetype, v->output_label);
+                } else {
+                    fprintf(fp, "    out%d_ = (%s*) mxGetData(plhs[%d]);\n",
+                            v->output_label, v->basetype, v->output_label);
+                }
+            }
+            free(accessor);
+        } else if (v->devicespec != 'g' && !v->nocopy){
         if (!return_flag && is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
             fprintf(fp, "    out%d_ = mxWrapAlloc_%s();\n",
                     v->output_label, v->basetype);
@@ -1278,6 +1404,36 @@ void mex_make_stmt(FILE* fp, Func* f)
 
 void mex_marshal_array(FILE* fp, Var* v)
 {
+    /* Nocopy output: plhs already set during allocation */
+    if (v->nocopy && v->iospec == 'o' && v->devicespec != 'g') {
+        if (complex_tinfo(v)) {
+            /* For interleaved: plhs already set.  For non-interleaved: fall through to copy */
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "    /* nocopy: plhs already set during allocation */\n"
+                    "#else\n");
+            /* Fall through to copy path below for non-interleaved */
+        } else {
+            return;
+        }
+    }
+
+    /* Nocopy inout: pass through the input mxArray */
+    if (v->nocopy && v->iospec == 'b' && v->devicespec != 'g') {
+        if (complex_tinfo(v)) {
+            fprintf(fp,
+                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                    "    plhs[%d] = (mxArray*)prhs[%d];\n"
+                    "#else\n",
+                    v->output_label, v->input_label);
+            /* Fall through to copy path below for non-interleaved */
+        } else {
+            fprintf(fp, "    plhs[%d] = (mxArray*)prhs[%d];\n",
+                    v->output_label, v->input_label);
+            return;
+        }
+    }
+
     if (v->devicespec != 'g'){
     Expr* e = v->qual->args;
     char namebuf[128];
@@ -1390,6 +1546,11 @@ void mex_marshal_array(FILE* fp, Var* v)
     }
     }
 
+    /* Close #else from nocopy complex fallback */
+    if (v->nocopy && v->devicespec != 'g' && complex_tinfo(v) &&
+        (v->iospec == 'o' || v->iospec == 'b'))
+        fprintf(fp, "#endif\n");
+
     if (v->devicespec == 'g'){
         if (v->iospec == 'b') {
             fprintf(fp, "    plhs[%d] = prhs[%d];\n", v->output_label, v->input_label);
@@ -1485,11 +1646,24 @@ void mex_dealloc(FILE* fp, Var* v, bool return_flag)
         return;
 
     if (v->devicespec != 'g'){
-    if (is_array(v->tinfo) || v->tinfo == VT_string) {
-        if (v->iospec == 'o' && !v->nocopy)
+    if (v->nocopy && (is_array(v->tinfo) || v->tinfo == VT_string)) {
+        /* Nocopy: only free the mxMalloc'd fallback buffer for complex non-interleaved */
+        if (complex_tinfo(v)) {
+            fprintf(fp, "#ifndef MX_HAS_INTERLEAVED_COMPLEX\n");
+            if (v->iospec == 'o')
+                fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
+                        v->output_label, v->output_label);
+            else
+                fprintf(fp, "    if (in%d_)  mxFree(in%d_);\n",
+                        v->input_label, v->input_label);
+            fprintf(fp, "#endif\n");
+        }
+        /* Non-complex nocopy: data owned by mxArray, skip free entirely */
+    } else if (!v->nocopy && (is_array(v->tinfo) || v->tinfo == VT_string)) {
+        if (v->iospec == 'o')
             fprintf(fp, "    if (out%d_) mxFree(out%d_);\n",
                     v->output_label, v->output_label);
-        else if (!v->nocopy && (v->iospec == 'b' || !(strcmp(v->basetype, "double") == 0 || strcmp(v->basetype, "float") == 0) ))
+        else if (v->iospec == 'b' || !(strcmp(v->basetype, "double") == 0 || strcmp(v->basetype, "float") == 0) )
             fprintf(fp, "    if (in%d_)  mxFree(in%d_);\n",
                     v->input_label, v->input_label);
     } else if (is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
