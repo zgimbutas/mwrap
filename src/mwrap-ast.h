@@ -139,6 +139,9 @@ void print_oct_file(FILE* fp, Func* f, const char* octfunc);
 void print_cpp_init(FILE* fp);
 void print_cpp_file(FILE* fp, Func* f, const char* cppfunc);
 
+void print_fmex_init(FILE* fp);
+void print_fmex_file(FILE* fp, Func* f, const char* mexfunc);
+
 void mex_c99_complex(FILE* fp);
 void mex_cpp_complex(FILE* fp);
 
@@ -156,6 +159,7 @@ void destroy_inherits();
 
 extern bool mw_oct_mode;
 extern bool mw_cppmex_mode;
+extern bool mw_fmex_mode;
 extern bool mw_use_gpu;
 extern bool mw_generate_catch;
 extern bool mw_use_c99_complex;

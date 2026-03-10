@@ -53,6 +53,22 @@ add_custom_command(
 set_source_files_properties(${MWRAP_CPP_SUPPORT_HEADER} PROPERTIES GENERATED TRUE)
 add_custom_target(mwrap_cpp_support_header DEPENDS ${MWRAP_CPP_SUPPORT_HEADER})
 
+set(MWRAP_FMEX_SUPPORT_HEADER ${CMAKE_CURRENT_BINARY_DIR}/mwrap-fmex-support.h)
+add_custom_command(
+  OUTPUT ${MWRAP_FMEX_SUPPORT_HEADER}
+  COMMAND ${CMAKE_COMMAND}
+          -DSTRINGIFY=$<TARGET_FILE:stringify>
+          -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/mwrap-fmex-support.f90
+          -DOUTPUT=${MWRAP_FMEX_SUPPORT_HEADER}
+          -DNAME=fmex_header
+          -P ${PROJECT_SOURCE_DIR}/cmake/run_stringify.cmake
+  DEPENDS stringify ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-fmex-support.f90
+  COMMENT "Generating mwrap-fmex-support.h"
+  VERBATIM
+)
+set_source_files_properties(${MWRAP_FMEX_SUPPORT_HEADER} PROPERTIES GENERATED TRUE)
+add_custom_target(mwrap_fmex_support_header DEPENDS ${MWRAP_FMEX_SUPPORT_HEADER})
+
 set(MWRAP_HANDWRITTEN_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-ast.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-typecheck.cc
@@ -60,6 +76,7 @@ set(MWRAP_HANDWRITTEN_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-mgen.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-octgen.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-cppgen.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-fmexgen.cc
 )
 set(MWRAP_HANDWRITTEN_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/mwrap-ast.h
@@ -109,8 +126,9 @@ add_executable(mwrap
   ${MWRAP_SUPPORT_HEADER}
   ${MWRAP_OCT_SUPPORT_HEADER}
   ${MWRAP_CPP_SUPPORT_HEADER}
+  ${MWRAP_FMEX_SUPPORT_HEADER}
 )
-add_dependencies(mwrap mwrap_support_header mwrap_oct_support_header mwrap_cpp_support_header)
+add_dependencies(mwrap mwrap_support_header mwrap_oct_support_header mwrap_cpp_support_header mwrap_fmex_support_header)
 
 target_sources(mwrap PRIVATE ${MWRAP_HANDWRITTEN_HEADERS} ${MWRAP_GENERATED_HEADERS})
 

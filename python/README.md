@@ -26,7 +26,8 @@ Key flags:
 | `-mex name` | MATLAB MEX function name |
 | `-cppmex name` | MATLAB C++ MEX API function name (R2018a+) |
 | `-oct name` | Octave oct-file function name (generates DEFUN_DLD gateway) |
-| `-c file.c` | Generate C/C++ MEX gateway file |
+| `-fmex name` | Fortran MEX function name (generates pure Fortran 90 gateway) |
+| `-c file.c` | Generate C/C++/Fortran gateway file |
 | `-m file.m` | Generate MATLAB stub file |
 | `-mb` | Generate `.m` files from `@` redirections |
 | `-list` | List files from `@` redirections |
@@ -49,9 +50,11 @@ Key flags:
 | `mwrap_mgen.py` | MATLAB `.m` stub generator |
 | `mwrap_cppgen.py` | MATLAB C++ MEX API code generator |
 | `mwrap_octgen.py` | Octave oct-file (DEFUN_DLD) code generator |
+| `mwrap_fmexgen.py` | Fortran MEX (iso_c_binding) code generator |
 | `mwrap_support.c` | Runtime support library for C MEX backend |
 | `mwrap_cpp_support.c` | Runtime support for C++ MEX API backend |
 | `mwrap_oct_support.c` | Runtime support for Octave oct-file backend |
+| `mwrap_fmex_support.f90` | Runtime support module for Fortran MEX backend |
 
 ## License
 

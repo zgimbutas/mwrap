@@ -24,13 +24,14 @@ from mwrap_parser import Parser
 from mwrap_cgen import print_mex_init, print_mex_file
 from mwrap_cppgen import print_cpp_init, print_cpp_file
 from mwrap_octgen import print_oct_init, print_oct_file
+from mwrap_fmexgen import print_fmex_init, print_fmex_file
 
 
 HELP_STRING = """\
 mwrap 1.4 - MEX/oct-file generator for MATLAB and Octave
 
 Syntax:
-  mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct]
+  mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct | -fmex outputfmex]
         [-m output.m] [-c output.c]
         [-mb] [-list] [-catch] [-i8] [-c99complex] [-cppcomplex] [-gpu]
         infile1 infile2 ...
@@ -38,19 +39,21 @@ Syntax:
   -mex outputmex   -- generate MEX gateway (default, C API)
   -cppmex outputcpp -- generate MATLAB C++ MEX API gateway (R2018a+)
   -oct outputoct   -- generate Octave oct-file gateway
+  -fmex outputfmex -- generate Fortran MEX gateway (pure Fortran, .f90)
   -m output.m      -- generate the MATLAB stub called output.m
-  -c output.c      -- generate the C/C++ file
+  -c output.c      -- generate the C/C++ or Fortran file
   -mb              -- generate .m files specified with @ redirections
   -list            -- list files specified with @ redirections
   -catch           -- generate C++ exception handling code
   -i8              -- convert int, long, uint, ulong to int64_t, uint64_t
+                      for -fmex: emit integer*8 for all integers
   -c99complex      -- add support code for C99 complex types
   -cppcomplex      -- add support code for C++ complex types
   -gpu             -- add support code for MATLAB gpuArray (MEX only)
 """
 
 USAGE_STRING = """\
-Usage: mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct] [-m output.m] [-c output.c] infile1 ...
+Usage: mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct | -fmex outputfmex] [-m output.m] [-c output.c] infile1 ...
 Try 'mwrap --help' for more information.
 """
 
@@ -76,6 +79,13 @@ def _load_oct_support():
         return f.read()
 
 
+def _load_fmex_support():
+    """Load the runtime support module for Fortran MEX (iso_c_binding)."""
+    support_path = os.path.join(_script_dir, "mwrap_fmex_support.f90")
+    with open(support_path, "r") as f:
+        return f.read()
+
+
 def _build_parser():
     """Build the argparse argument parser."""
     p = argparse.ArgumentParser(add_help=False)
@@ -85,6 +95,7 @@ def _build_parser():
     p.add_argument('-mex', dest='mexfunc', default='mexfunction')
     p.add_argument('-cppmex', dest='cppfunc')
     p.add_argument('-oct', dest='octfunc')
+    p.add_argument('-fmex', dest='fmexfunc')
     p.add_argument('-mb', action='store_true', dest='mbatching')
     p.add_argument('-list', action='store_true', dest='listing')
     p.add_argument('-catch', action='store_true', dest='catch_')
@@ -114,12 +125,19 @@ def main():
     # Determine backend mode
     cppmex_mode = args.cppfunc is not None
     oct_mode = args.octfunc is not None
+    fmex_mode = args.fmexfunc is not None
     # If -cppmex was given, the user chose C++ MEX API mode
     # If -oct was given, the user explicitly chose oct-file mode
+    # If -fmex was given, the user chose Fortran MEX mode
     # If -mex was given (or default), use C MEX mode
 
-    if oct_mode and cppmex_mode:
-        sys.stderr.write("Error: -oct and -cppmex are mutually exclusive\n")
+    exclusive_count = sum([oct_mode, cppmex_mode, fmex_mode])
+    if exclusive_count > 1:
+        sys.stderr.write("Error: -oct, -cppmex, and -fmex are mutually exclusive\n")
+        return 1
+
+    if fmex_mode and args.gpu:
+        sys.stderr.write("Error: -fmex and -gpu cannot be used together\n")
         return 1
 
     if args.catch_:
@@ -159,6 +177,8 @@ def main():
         gateway_name = args.octfunc
     elif cppmex_mode:
         gateway_name = args.cppfunc
+    elif fmex_mode:
+        gateway_name = args.fmexfunc
     else:
         gateway_name = args.mexfunc
     lexer = Lexer(outfp=outfp, outcfp=outcfp,
@@ -183,7 +203,10 @@ def main():
         lexer.current_ifname = infile
 
         if outcfp and not emitted_init:
-            if oct_mode:
+            if fmex_mode:
+                support_text = _load_fmex_support()
+                print_fmex_init(outcfp, ctx, support_text)
+            elif oct_mode:
                 support_text = _load_oct_support()
                 print_oct_init(outcfp, ctx, support_text)
             elif cppmex_mode and ctx.mw_use_gpu:
@@ -204,9 +227,12 @@ def main():
         err_flag += parser.err_flag
         parser.err_flag = 0
 
-    # --- Generate C/C++ output ---
+    # --- Generate output ---
     if not err_flag and outcfp:
-        if oct_mode:
+        if fmex_mode:
+            print_fmex_file(outcfp, ctx, parser.funcs, args.fmexfunc,
+                            i8_mode=args.i8)
+        elif oct_mode:
             print_oct_file(outcfp, ctx, parser.funcs, args.octfunc)
         elif cppmex_mode and ctx.mw_use_gpu:
             print_mex_file(outcfp, ctx, parser.funcs)

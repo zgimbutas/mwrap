@@ -1,0 +1,27 @@
+function test_fmex1
+
+$ subroutine foo(a, b, c)
+$ implicit none
+$ integer a, b, c
+$ a = b + c
+$ return
+$ end
+
+# FORTRAN foo(output int[1] a, int[1] b, int[1] c);
+tassert(a == 3, 'Fortran MEX basic bindings');
+
+$ subroutine daxpy_wrap(n, a, x, y)
+$ implicit none
+$ integer n, i
+$ real*8 a, x(*), y(*)
+$ do i = 1, n
+$   y(i) = a * x(i) + y(i)
+$ end do
+$ return
+$ end
+
+# FORTRAN daxpy_wrap(int[1] n, double[1] a, double[] x, inout double[] y);
+tassert(norm(y - (2*x + y0)) < 1e-14, 'Fortran MEX array inout');
+
+function tassert(pred, msg)
+if ~pred, fprintf('FAIL: %s\n', msg); else fprintf('PASS: %s\n', msg); end

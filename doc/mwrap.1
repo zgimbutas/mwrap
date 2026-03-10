@@ -6,6 +6,7 @@ mwrap - Octave/MATLAB mex generator
 .OP \-mex \fIoutputmex\fP
 .OP \-cppmex \fIoutputcppmex\fP
 .OP \-oct \fIoutputoct\fP
+.OP \-fmex \fIoutputfmex\fP
 .OP \-m \fIoutput.m\fP
 .OP \-c \fIoutputmex.c\fP
 .OP \-mb
@@ -44,6 +45,17 @@ specifies the name of the Octave oct-file function to generate.  The
 generated code uses DEFUN_DLD and should be compiled with \fBmkoctfile\fP.
 .
 .TP
+.B \-fmex
+specifies the name of the Fortran MEX function to generate.  The generated
+code is free-form Fortran 90 (.f90) using \fBiso_c_binding\fP and
+\fBbind(C)\fP for direct C interop with the MATLAB/Octave MEX API.  This
+produces a pure Fortran gateway with no C bridge file, no name mangling
+macros, and no preprocessor.  All wrapped functions must be declared with the
+\fBFORTRAN\fP keyword.  Compile with \fBmex\fP (MATLAB) or
+\fBmkoctfile --mex\fP (Octave).  Mutually exclusive with \fB\-oct\fP and
+\fB\-cppmex\fP.
+.
+.TP
 .B \-m
 specifies the name of the Octave/MATLAB script to be generated.
 .
@@ -77,8 +89,11 @@ exceptions.
 .B \-i8
 convert \fBint\fP, \fBlong\fP, \fBuint\fP, \fBulong\fP types to
 \fBint64_t\fP, \fBuint64_t\fP. This provides
-a convenient way to interface with \fB-fdefault-integer-8\fP and 
+a convenient way to interface with \fB-fdefault-integer-8\fP and
 \fB-i8\fP flags used by Fortran compilers.
+For the \fB\-fmex\fP backend, \fB\-i8\fP causes all integers to be emitted
+as \fBinteger(8)\fP, matching gfortran's \fB\-finteger-4-integer-8\fP
+promotion.
 .
 .TP
 .B \-c99complex
