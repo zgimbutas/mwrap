@@ -47,9 +47,11 @@ The processing pipeline for both C++ and Python versions is: **Lexer → Parser 
 - `mwrap-mgen.cc` — MATLAB `.m` stub generation
 - `mwrap-cppgen.cc` — MATLAB C++ MEX API (R2018a+) code generation
 - `mwrap-octgen.cc` — Octave oct-file (DEFUN_DLD) code generation
+- `mwrap-fmexgen.cc` — Fortran 90 MEX gateway code generation
 - `mwrap-support.c` — runtime support library embedded into generated C MEX files (stringified into `mwrap-support.h` at build time via `stringify.c`)
 - `mwrap-cpp-support.c` — runtime support library for C++ MEX API backend
 - `mwrap-oct-support.c` — runtime support library for Octave oct-file backend
+- `mwrap-fmex-support.f90` — runtime support module for Fortran 90 MEX backend
 
 ### Python implementation (`python/`)
 - `mwrap` — entry point
@@ -58,9 +60,11 @@ The processing pipeline for both C++ and Python versions is: **Lexer → Parser 
 - `mwrap_mgen.py` — MATLAB stub generator
 - `mwrap_cppgen.py` — MATLAB C++ MEX API code generator (parallel to `mwrap-cppgen.cc`)
 - `mwrap_octgen.py` — Octave oct-file code generator (parallel to `mwrap-octgen.cc`)
+- `mwrap_fmexgen.py` — Fortran 90 MEX gateway code generator (parallel to `mwrap-fmexgen.cc`)
 - `mwrap_support.c` — runtime support file for C MEX backend
 - `mwrap_cpp_support.c` — runtime support for C++ MEX API backend
 - `mwrap_oct_support.c` — runtime support for Octave oct-file backend
+- `mwrap_fmex_support.f90` — runtime support module for Fortran 90 MEX backend
 
 ### Key data structures
 - **`VT` enum** (in `mwrap_ast.py` / implicit in C++) — classifies variable types: scalar, array, complex, object, pointer, reference, string, mxArray, GPU variants. The `Var` node also carries a `nocopy` field for zero-copy array passing.
@@ -72,7 +76,9 @@ There are four code generation backends:
 - **C MEX** (`-mex` + `-c`) — traditional `mexFunction` gateway, compiled with `mex` or `mkoctfile --mex`
 - **C++ MEX** (`-cppmex`) — MATLAB C++ MEX API (R2018a+) using `MexFunction::operator()`
 - **Octave oct-file** (`-oct`) — native Octave `DEFUN_DLD` gateway, compiled with `mkoctfile`
-- **MATLAB stubs** (`-m` / `-mb`) — `.m` files that call the compiled gateway
+- **Fortran 90 MEX** (`-fmex`) — pure Fortran 90 MEX gateway, compiled with `mex` using a Fortran compiler
+
+Additionally, **MATLAB stubs** (`-m` / `-mb`) generate `.m` files that call the compiled gateway.
 
 Each backend uses an integer dispatch table: each wrapped function gets an ID, and the entry point dispatches via switch. Input validation, data conversion, memory management, and complex type handling are all generated per-function.
 
