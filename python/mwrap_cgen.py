@@ -438,8 +438,8 @@ def _unpack_input_array(fp, v):
     il = v.input_label
     bt = v.basetype
 
-    # --- Nocopy path ---
-    if v.devicespec != 'g' and v.nocopy:
+    # --- Nocopy path (disabled for inout — modifying prhs in-place is unsafe) ---
+    if v.devicespec != 'g' and v.nocopy and v.iospec != 'b':
         mxcid = basetype_to_mxclassid(bt)
         accessor = basetype_to_mxaccessor(bt)
         fp.write(f"    if (mxGetM(prhs[{il}])*mxGetN(prhs[{il}]) != 0) {{\n")
@@ -786,16 +786,6 @@ def _marshal_array(fp, v):
         else:
             return
 
-    # Nocopy inout: pass through
-    if v.nocopy and v.iospec == 'b' and v.devicespec != 'g':
-        if complex_tinfo(v):
-            fp.write("#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                   f"    plhs[{ol}] = (mxArray*)prhs[{il}];\n"
-                   "#else\n")
-            nocopy_complex_fallback = True
-        else:
-            fp.write(f"    plhs[{ol}] = (mxArray*)prhs[{il}];\n")
-            return
 
     if v.devicespec != 'g':
         da = v.qual.args
@@ -914,7 +904,7 @@ def _marshal_results(fp, ctx, f):
 def _dealloc_var(fp, ctx, vars, return_flag):
     for v in vars:
         if v.devicespec != 'g':
-            if v.nocopy:
+            if v.nocopy and v.iospec != 'b':
                 if complex_tinfo(v):
                     fp.write("#ifndef MX_HAS_INTERLEAVED_COMPLEX\n")
                     if v.iospec == 'o':

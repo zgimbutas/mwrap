@@ -222,7 +222,7 @@ def _declare_in_args(fp, args):
                 if is_array(v.tinfo):
                     bt = v.basetype
                     tp = _cpp_type_props(bt)
-                    if v.nocopy and bt in CPP_TYPE_PROPS:
+                    if v.nocopy and v.iospec != 'b' and bt in CPP_TYPE_PROPS:
                         # Nocopy: declare unique_ptr<TypedArray> handle (ref-counted, keeps data alive)
                         # TypedArray default ctor is deleted in R2024b+, so wrap in unique_ptr
                         zinfo = _complex_array_info(v)
@@ -322,7 +322,7 @@ def _unpack_dims(fp, f):
 
 def _check_dims(fp, args):
     for v in args:
-        if (v.iospec != 'o' and not v.nocopy and
+        if (v.iospec != 'o' and (not v.nocopy or v.iospec == 'b') and
                 is_array(v.tinfo) and v.qual and v.qual.args):
             a = v.qual.args
             if len(a) > 1:
@@ -369,8 +369,8 @@ def _unpack_input_array(fp, v):
     bt = v.basetype
     tp = _cpp_type_props(bt)
 
-    # --- Nocopy path ---
-    if v.nocopy and bt in CPP_TYPE_PROPS:
+    # --- Nocopy path (disabled for inout — modifying input in-place is unsafe) ---
+    if v.nocopy and v.iospec != 'b' and bt in CPP_TYPE_PROPS:
         zinfo = _complex_array_info(v)
         if zinfo:
             ate, st, ta = zinfo
@@ -712,10 +712,6 @@ def _marshal_array(fp, v):
             fp.write(f"    retval[{ol}] = factory.createArrayFromBuffer({{({sz}), 1}}, std::move(buf_out{ol}_));\n")
         return
 
-    # --- Nocopy inout: return modified TypedArray via std::move ---
-    if v.nocopy and v.iospec == 'b' and bt in CPP_TYPE_PROPS:
-        fp.write(f"    retval[{ol}] = std::move(*ta_nc_in{il}_);\n")
-        return
 
     # Determine effective type info for marshalling
     zinfo = _complex_array_info(v)
@@ -887,7 +883,7 @@ def _marshal_results(fp, ctx, f):
 def _dealloc_var(fp, ctx, vars, return_flag):
     for v in vars:
         if is_array(v.tinfo) or v.tinfo == VT.string:
-            if v.nocopy:
+            if v.nocopy and v.iospec != 'b':
                 # Nocopy: MATLAB owns the memory (TypedArray/buffer), no dealloc needed.
                 # Exception: unknown types for nocopy output that fell back to new[]
                 if v.iospec == 'o' and v.basetype not in CPP_TYPE_PROPS:

@@ -317,7 +317,7 @@ static void cpp_declare_in_args(FILE* fp, Var* args)
                 /* For arrays, declare storage at function scope */
                 if (is_array(v->tinfo)) {
                     const CppTypeProps* tp = cpp_type_props(v->basetype);
-                    if (v->nocopy && cpp_is_known_type(v->basetype)) {
+                    if (v->nocopy && v->iospec != 'b' && cpp_is_known_type(v->basetype)) {
                         /* Nocopy: declare unique_ptr<TypedArray> handle (ref-counted, keeps data alive) */
                         /* TypedArray default ctor is deleted in R2024b+, so wrap in unique_ptr */
                         CppComplexInfo zinfo;
@@ -456,7 +456,7 @@ static void cpp_unpack_dims(FILE* fp, Func* f)
 static void cpp_check_dims(FILE* fp, Var* args)
 {
     for (Var* v = args; v; v = v->next) {
-        if (v->iospec != 'o' && !v->nocopy &&
+        if (v->iospec != 'o' && (!v->nocopy || v->iospec == 'b') &&
             is_array(v->tinfo) && v->qual && v->qual->args) {
             Expr* a = v->qual->args;
             if (a->next) {
@@ -507,7 +507,7 @@ static void cpp_unpack_input_array(FILE* fp, Var* v)
     const CppTypeProps* tp = cpp_type_props(bt);
 
     /* --- Nocopy path --- */
-    if (v->nocopy && cpp_is_known_type(bt)) {
+    if (v->nocopy && v->iospec != 'b' && cpp_is_known_type(bt)) {
         CppComplexInfo zinfo;
         if (get_cpp_complex_info(v, &zinfo)) {
             /* Complex nocopy: auto-promote real to complex */
@@ -955,11 +955,6 @@ static void cpp_marshal_array(FILE* fp, Var* v)
         return;
     }
 
-    /* --- Nocopy inout: return modified TypedArray via std::move --- */
-    if (v->nocopy && v->iospec == 'b' && cpp_is_known_type(bt)) {
-        fprintf(fp, "    retval[%d] = std::move(*ta_nc_in%d_);\n", ol, il);
-        return;
-    }
 
     /* Determine effective type info for marshalling */
     CppComplexInfo zinfo;
@@ -1185,7 +1180,7 @@ static void cpp_dealloc_var(FILE* fp, Var* vars)
 {
     for (Var* v = vars; v; v = v->next) {
         if (is_array(v->tinfo) || v->tinfo == VT_string) {
-            if (v->nocopy) {
+            if (v->nocopy && v->iospec != 'b') {
                 /* Nocopy: MATLAB owns the memory, no dealloc needed.
                  * Exception: unknown types for nocopy output that fell back to new[] */
                 if (v->iospec == 'o' && !cpp_is_known_type(v->basetype))

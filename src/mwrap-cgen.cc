@@ -820,8 +820,8 @@ void mex_alloc_size(FILE* fp, Expr* e)
 
 void mex_unpack_input_array(FILE* fp, Var* v)
 {
-    /* --- Nocopy path --- */
-    if (v->devicespec != 'g' && v->nocopy) {
+    /* --- Nocopy path (disabled for inout — modifying prhs in-place is unsafe) --- */
+    if (v->devicespec != 'g' && v->nocopy && v->iospec != 'b') {
         int il = v->input_label;
         const char* bt = v->basetype;
         char* mxcid = basetype_to_mxclassid(bt);
@@ -1418,21 +1418,6 @@ void mex_marshal_array(FILE* fp, Var* v)
         }
     }
 
-    /* Nocopy inout: pass through the input mxArray */
-    if (v->nocopy && v->iospec == 'b' && v->devicespec != 'g') {
-        if (complex_tinfo(v)) {
-            fprintf(fp,
-                    "#if MX_HAS_INTERLEAVED_COMPLEX\n"
-                    "    plhs[%d] = (mxArray*)prhs[%d];\n"
-                    "#else\n",
-                    v->output_label, v->input_label);
-            /* Fall through to copy path below for non-interleaved */
-        } else {
-            fprintf(fp, "    plhs[%d] = (mxArray*)prhs[%d];\n",
-                    v->output_label, v->input_label);
-            return;
-        }
-    }
 
     if (v->devicespec != 'g'){
     Expr* e = v->qual->args;
@@ -1548,7 +1533,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 
     /* Close #else from nocopy complex fallback */
     if (v->nocopy && v->devicespec != 'g' && complex_tinfo(v) &&
-        (v->iospec == 'o' || v->iospec == 'b'))
+        v->iospec == 'o')
         fprintf(fp, "#endif\n");
 
     if (v->devicespec == 'g'){
@@ -1646,7 +1631,7 @@ void mex_dealloc(FILE* fp, Var* v, bool return_flag)
         return;
 
     if (v->devicespec != 'g'){
-    if (v->nocopy && (is_array(v->tinfo) || v->tinfo == VT_string)) {
+    if (v->nocopy && v->iospec != 'b' && (is_array(v->tinfo) || v->tinfo == VT_string)) {
         /* Nocopy: only free the mxMalloc'd fallback buffer for complex non-interleaved */
         if (complex_tinfo(v)) {
             fprintf(fp, "#ifndef MX_HAS_INTERLEAVED_COMPLEX\n");

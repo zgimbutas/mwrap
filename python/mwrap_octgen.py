@@ -314,7 +314,7 @@ def _unpack_dims(fp, f):
 
 def _check_dims(fp, args):
     for v in args:
-        if (v.iospec != 'o' and not v.nocopy and
+        if (v.iospec != 'o' and (not v.nocopy or v.iospec == 'b') and
                 is_array(v.tinfo) and v.qual and v.qual.args):
             a = v.qual.args
             if len(a) > 1:
@@ -668,10 +668,6 @@ def _marshal_array(fp, v):
         fp.write(f"    retval({ol}) = mat_out{ol}_;\n")
         return
 
-    # Nocopy inout: function modified data in-place, return the input Matrix
-    if v.nocopy and v.iospec == 'b' and known_type:
-        fp.write(f"    retval({ol}) = mat_in{il}_;\n")
-        return
 
     if v.tinfo == VT.rarray:
         fp.write(f"    if (out{ol}_ == NULL) {{\n")
@@ -806,12 +802,6 @@ def _dealloc_var(fp, ctx, vars, return_flag):
                     fp.write(f"    if (out{v.output_label}_) delete[] out{v.output_label}_;\n")
             elif v.iospec == 'o':
                 fp.write(f"    if (out{v.output_label}_) delete[] out{v.output_label}_;\n")
-            elif v.nocopy and v.iospec == 'b' and is_array(v.tinfo):
-                # Nocopy inout: memory owned by input Matrix, no dealloc needed.
-                bt = v.basetype
-                zinfo = _complex_matrix_info(v)
-                if bt not in OCT_TYPE_PROPS and not zinfo:
-                    fp.write(f"    if (in{v.input_label}_)  delete[] in{v.input_label}_;\n")
             elif v.iospec == 'b':
                 # Inout arrays backed by known Octave types don't need dealloc
                 # (pointer into Matrix). Only dealloc for unknown types.

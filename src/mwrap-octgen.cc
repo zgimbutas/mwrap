@@ -875,11 +875,6 @@ static void marshal_array(FILE* fp, Var* v)
         return;
     }
 
-    /* Nocopy inout: function modified data in-place, return the input Matrix */
-    if (v->nocopy && v->iospec == 'b' && known_type) {
-        fprintf(fp, "    retval(%d) = mat_in%d_;\n", ol, il);
-        return;
-    }
 
     const char* ws;
     if (v->tinfo == VT_rarray) {
