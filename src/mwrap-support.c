@@ -182,9 +182,10 @@ void func(mxArray* a, const T* q, mwSize n) \
     if( mxIsComplex(a) ) \
       { \
 	z = mxGetComplexDoubles(a);	   \
-	for (i = 0; i < n; ++i)		\
-	  (*z++).real = (double) *q++;	\
-	  (*z++).imag = 0;	\
+	for (i = 0; i < n; ++i) {	\
+	  z[i].real = (double) *q++;	\
+	  z[i].imag = 0;	\
+	}	\
       } \
     else \
       {				   \
@@ -432,9 +433,10 @@ void func(mxArray* a, const T* q, mwSize n) \
     if( mxIsComplex(a) ) \
       { \
 	z = mxGetComplexSingles(a);	   \
-	for (i = 0; i < n; ++i)		\
-	  (*z++).real = (float) *q++;	\
-	  (*z++).imag = 0;	\
+	for (i = 0; i < n; ++i) {	\
+	  z[i].real = (float) *q++;	\
+	  z[i].imag = 0;	\
+	}	\
       } \
     else \
       {				   \
