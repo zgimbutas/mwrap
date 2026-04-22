@@ -75,8 +75,9 @@ inline void add_func(Func* func)
     if (!funcs) {
         funcs = func;
         lastfunc = func;
+        func_lookup[id_string(func)] = func;
         return;
-    } 
+    }
 
     Func*& func_ptr = func_lookup[id_string(func)];
     if (func_ptr) {
