@@ -128,6 +128,48 @@ _mwrap_add_log_test(
   ARGS -cppcomplex test_typecheck.mw
 )
 
+# Smoke test for the -fmex (Fortran 90 MEX) backend: verify mwrap
+# generates a .f90 gateway and .m stub without erroring out.  This does
+# not compile the generated Fortran; a full round-trip test belongs in
+# a CI job with a MATLAB/gfortran toolchain.
+set(_fmex_smoke_dir "${CMAKE_CURRENT_BINARY_DIR}/fmex_smoke")
+set(_fmex_smoke_driver "${CMAKE_CURRENT_BINARY_DIR}/mwrap_fmex_smoke.cmake")
+file(WRITE "${_fmex_smoke_driver}" [[
+file(MAKE_DIRECTORY "${WORK_DIR}")
+configure_file("${MW_INPUT}" "${WORK_DIR}/test_fmex1.mw" COPYONLY)
+execute_process(
+  COMMAND "${MWRAP_EXECUTABLE}"
+          -fmex -mex test_fmex1mex
+          -c test_fmex1mex.f90
+          -m test_fmex1.m
+          test_fmex1.mw
+  WORKING_DIRECTORY "${WORK_DIR}"
+  RESULT_VARIABLE rc
+  OUTPUT_VARIABLE out
+  ERROR_VARIABLE err
+)
+if(NOT rc EQUAL 0)
+  message(FATAL_ERROR "mwrap -fmex failed with exit ${rc}\nstdout:\n${out}\nstderr:\n${err}")
+endif()
+foreach(f test_fmex1mex.f90 test_fmex1.m)
+  if(NOT EXISTS "${WORK_DIR}/${f}")
+    message(FATAL_ERROR "mwrap -fmex did not produce ${f}")
+  endif()
+  file(SIZE "${WORK_DIR}/${f}" sz)
+  if(sz LESS 64)
+    message(FATAL_ERROR "${f} is suspiciously small (${sz} bytes)")
+  endif()
+endforeach()
+]])
+add_test(
+  NAME mwrap.test_fmex_smoke
+  COMMAND ${CMAKE_COMMAND}
+          -DMWRAP_EXECUTABLE=$<TARGET_FILE:mwrap>
+          -DWORK_DIR=${_fmex_smoke_dir}
+          -DMW_INPUT=${CMAKE_CURRENT_SOURCE_DIR}/test_fmex1.mw
+          -P ${_fmex_smoke_driver}
+)
+
 if(MWRAP_COMPILE_MEX AND MWRAP_MEX_BACKENDS)
   include(${CMAKE_SOURCE_DIR}/cmake/MwrapAddMex.cmake)
 
