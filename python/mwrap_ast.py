@@ -187,13 +187,14 @@ def promote_int(ctx, name: str) -> str:
         if name == "uint":  return "ulong"
         if name == "ulong": return "ulong"
     elif ctx.mw_promote_int == 3:
+        # LP64: int/uint stay 32-bit, long/ulong become 64-bit.
         if name == "int":   ctx.mw_use_int32_t = 1
         if name == "long":  ctx.mw_use_int64_t = 1
         if name == "uint":  ctx.mw_use_uint32_t = 1
         if name == "ulong": ctx.mw_use_uint64_t = 1
         if name == "int":   return "int32_t"
-        if name == "long":  return "int32_t"
-        if name == "uint":  return "uint64_t"
+        if name == "long":  return "int64_t"
+        if name == "uint":  return "uint32_t"
         if name == "ulong": return "uint64_t"
     elif ctx.mw_promote_int == 4:
         if name == "int":   ctx.mw_use_int64_t = 1

@@ -92,14 +92,15 @@ char *promote_int(char* name)
       if( strcmp(name,"ulong") == 0 ) return strdup("ulong");
     }
   if( mw_promote_int == 3 )
-    {      
+    {
+      /* LP64: int/uint stay 32-bit, long/ulong become 64-bit. */
       if( strcmp(name,"int") == 0 ) mw_use_int32_t = 1;
       if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;
       if( strcmp(name,"uint") == 0 ) mw_use_uint32_t = 1;
       if( strcmp(name,"ulong") == 0 ) mw_use_uint64_t = 1;
       if( strcmp(name,"int") == 0 ) return strdup("int32_t");
-      if( strcmp(name,"long") == 0 ) return strdup("int32_t");
-      if( strcmp(name,"uint") == 0 ) return strdup("uint64_t");
+      if( strcmp(name,"long") == 0 ) return strdup("int64_t");
+      if( strcmp(name,"uint") == 0 ) return strdup("uint32_t");
       if( strcmp(name,"ulong") == 0 ) return strdup("uint64_t");
     }
   if( mw_promote_int == 4 )
