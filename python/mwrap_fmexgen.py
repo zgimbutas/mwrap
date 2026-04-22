@@ -233,13 +233,15 @@ def _print_declarations(fp, f, i8_mode):
             if not (v.qual and v.qual.args):
                 _w(fp, f"integer(c_size_t) :: inout{il}_m_, inout{il}_n_", 4)
 
-    # Return value
+    # Return value: declare external Fortran function with its return type.
+    # The `out0_` and `out0_dbl_` locals are already declared by the
+    # iospec=='o' loop above; we only need the external interface here so
+    # that `out0_ = funcname(...)` is accepted under `implicit none`.
     if f.ret:
         v = f.ret[0]
         if v.tinfo == VT.scalar:
             ft, _, _ = _fort_type(v.basetype, i8_mode)
-            _w(fp, f"{ft} :: out0_", 4)
-            _w(fp, f"real(c_double), pointer :: ret_dbl_(:)", 4)
+            _w(fp, f"{ft}, external :: {f.funcv}", 4)
 
     # Temp integer for loop index (if needed for conversion)
     needs_loop = False
@@ -524,13 +526,9 @@ def _print_marshal_results(fp, f, i8_mode):
 
     _wc(fp, "marshal outputs", 4)
 
-    # Return value (scalar)
-    if f.ret:
-        v = f.ret[0]
-        if v.tinfo == VT.scalar:
-            _w(fp, f"plhs(1) = mxCreateDoubleMatrix(1_c_size_t, 1_c_size_t, 0)", 4)
-            _w(fp, f"call c_f_pointer(mxGetPr(plhs(1)), ret_dbl_, [1])", 4)
-            _w(fp, f"ret_dbl_(1) = dble(out0_)", 4)
+    # Scalar return values are marshaled by the "Output-only scalars"
+    # loop below; f.ret has iospec=='o' and picks up out<N>_ / out<N>_dbl_
+    # like any other scalar output.
 
     # Inout scalar arrays (e.g. inout int[1] ier)
     for v in f.args:

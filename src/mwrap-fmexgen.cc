@@ -317,13 +317,15 @@ static void fmex_print_declarations(FILE* fp, Func* f, bool i8_mode)
         }
     }
 
-    /* Return value */
+    /* Return value: declare external Fortran function with its return type.
+     * The `out0_` and `out0_dbl_` locals are already declared by the
+     * iospec=='o' loop above; we only need the external interface here so
+     * that `out0_ = funcname(...)` is accepted under `implicit none`. */
     if (f->ret) {
         Var* v = f->ret;
         if (v->tinfo == VT_scalar) {
             const FmexTypeProps* tp = fmex_type_props(v->basetype, i8_mode);
-            fmex_w(fp, 4, "%s :: out0_", tp->fort_type);
-            fmex_w(fp, 4, "real(c_double), pointer :: ret_dbl_(:)");
+            fmex_w(fp, 4, "%s, external :: %s", tp->fort_type, f->funcv);
         }
     }
 
@@ -721,15 +723,9 @@ static void fmex_print_marshal_results(FILE* fp, Func* f, bool i8_mode)
 
     fmex_wc(fp, 4, "marshal outputs");
 
-    /* Return value (scalar) */
-    if (f->ret) {
-        Var* v = f->ret;
-        if (v->tinfo == VT_scalar) {
-            fmex_w(fp, 4, "plhs(1) = mxCreateDoubleMatrix(1_c_size_t, 1_c_size_t, 0)");
-            fmex_w(fp, 4, "call c_f_pointer(mxGetPr(plhs(1)), ret_dbl_, [1])");
-            fmex_w(fp, 4, "ret_dbl_(1) = dble(out0_)");
-        }
-    }
+    /* Scalar return values are marshaled by the "Output-only scalars"
+     * loop below; f->ret has iospec=='o' and picks up out%d_ / out%d_dbl_
+     * like any other scalar output. */
 
     /* Inout scalar arrays (e.g. inout int[1] ier) */
     for (Var* v = f->args; v; v = v->next) {

@@ -23,5 +23,17 @@ $ end
 # FORTRAN daxpy_wrap(int[1] n, double[1] a, double[] x, inout double[] y);
 tassert(norm(y - (2*x + y0)) < 1e-14, 'Fortran MEX array inout');
 
+$ real*8 function scalefn(x)
+$ implicit none
+$ real*8 x
+$ scalefn = 2.0d0 * x
+$ return
+$ end
+
+@function r = call_scalefn(x)
+# double r = FORTRAN scalefn(double[1] x);
+end
+tassert(abs(call_scalefn(3.5) - 7.0) < 1e-14, 'Fortran MEX scalar return');
+
 function tassert(pred, msg)
 if ~pred, fprintf('FAIL: %s\n', msg); else fprintf('PASS: %s\n', msg); end
