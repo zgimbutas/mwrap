@@ -622,6 +622,14 @@ It can be combined with {\tt input}, {\tt output}, or {\tt inout}:
 \item {\tt nocopy inout} --- the input array's data pointer is passed
   directly and the same array is returned as output.  The callee may
   modify the data in place.
+
+  \emph{Note:} as of version 1.4.1, {\tt nocopy inout} falls back to
+  the safe copy path in codegen.  Modifying an input {\tt mxArray}'s
+  data in place is unsafe under MATLAB's copy-on-write semantics
+  (aliased arrays share storage; an in-place write silently corrupts
+  every alias).  The declaration is still accepted so existing
+  interfaces keep compiling, but the wrapped function receives a
+  writable copy rather than a pointer into the caller's array.
 \end{itemize}
 
 The {\tt nocopy} modifier is supported for numeric array types

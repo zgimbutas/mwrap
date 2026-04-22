@@ -1,5 +1,10 @@
 Recent updates:
 
+Version 1.4.1 (Mar 11, 2026):
+Disabled `nocopy inout` in codegen (C MEX, C++ MEX, Octave): modifying
+  prhs in place is unsafe under MATLAB's copy-on-write semantics.
+  Declarations are still accepted but fall back to the safe copy path.
+
 Version 1.4 (Mar 10, 2026):
 Added MATLAB C++ MEX API backend (-cppmex) for the R2018a+ C++ API
 Added Octave oct-file backend (-oct) for native DEFUN_DLD code generation

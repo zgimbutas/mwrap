@@ -1,5 +1,11 @@
 % Zero-copy (nocopy input/output/inout) test wrappers.
 % Test double, float, dcomplex, fcomplex.
+%
+% Note: `nocopy inout` currently falls back to the safe copy path
+% (modifying prhs in place is unsafe under MATLAB's copy-on-write
+% semantics). These declarations still exercise the fallback code
+% path; the accompanying .m test also checks that the caller's
+% array is not mutated.
 
 % --- double ---
 $void NocopyTimesTwo_double(double *A, double *B, int const N)
