@@ -374,6 +374,11 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        if (mw_fmex_mode && mw_use_gpu) {
+            fprintf(stderr, "Error: -fmex and -gpu cannot be used together\n");
+            return 1;
+        }
+
         if (mw_cppmex_mode && mw_use_gpu) {
             fprintf(stderr, "Note: -cppmex -gpu uses C MEX gateway (mxGPUArray API requires mxArray*)\n");
         }
