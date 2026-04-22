@@ -830,8 +830,7 @@ def _dealloc(fp, ctx, f):
 def _print_c_comment(fp, f):
     fp.write(f"/* ---- {f.fname}: {f.line} ----\n")
     fp.write(f" * {print_func(f)}")
-    if f.same:
-        fsame = f.same[0]
+    for fsame in f.same:
         fp.write(f" * Also at {fsame.fname}: {fsame.line}\n")
     fp.write(" */\n")
 

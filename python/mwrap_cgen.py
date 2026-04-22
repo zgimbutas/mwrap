@@ -942,9 +942,7 @@ def _dealloc(fp, ctx, f):
 def _print_c_comment(fp, f):
     fp.write(f"/* ---- {f.fname}: {f.line} ----\n")
     fp.write(f" * {print_func(f)}")
-    # Preserve original behavior: only print first duplicate
-    if f.same:
-        fsame = f.same[0]
+    for fsame in f.same:
         fp.write(f" * Also at {fsame.fname}: {fsame.line}\n")
     fp.write(" */\n")
 
@@ -987,9 +985,8 @@ def _make_profile_output(fp, funcs, printfunc):
            f"            {printfunc}\"Profiler inactive\\n\");\n")
     for fc in funcs:
         fp.write(f"        {printfunc}\"%d calls to {fc.fname}:{fc.line}")
-        # Preserve original behavior: only print first duplicate
-        if fc.same:
-            fp.write(f" ({fc.same[0].fname}:{fc.same[0].line})")
+        for fsame in fc.same:
+            fp.write(f" ({fsame.fname}:{fsame.line})")
         fp.write(f"\\n\", mexprofrecord_[{fc.id}]);\n")
 
 
