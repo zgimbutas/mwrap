@@ -277,7 +277,7 @@ char* mwrap_strdup(const char* s)
 const char* usage_string =
 "Usage: mwrap [-mex outputmex | -cppmex outputcpp | -oct octfunc | -fmex outputfmex]\n"
 "             [-m output.m] [-c output.c] infile1 ...\n"
-"Try 'mwrap --help' for more information.\n";
+"Try 'mwrap -h' or 'mwrap --help' for more information.\n";
 
 const char* help_string =
 "mwrap 1.4 - MEX file generator for MATLAB and Octave\n"
@@ -319,7 +319,8 @@ int main(int argc, char** argv)
         const char* cfile = NULL;
 
         for (j = 1; j < argc; ++j) {
-            if (strcmp(argv[j], "--help") == 0) {
+            if (strcmp(argv[j], "--help") == 0 ||
+                strcmp(argv[j], "-h") == 0) {
                 fprintf(stderr, "%s", help_string);
                 return 0;
             }
@@ -400,6 +401,7 @@ int main(int argc, char** argv)
                 strcmp(argv[j], "-fmex") == 0)
                 ++j;
             else if (strcmp(argv[j], "--help") == 0 ||
+                     strcmp(argv[j], "-h") == 0 ||
                      strcmp(argv[j], "-mb") == 0 ||
                      strcmp(argv[j], "-list") == 0 ||
                      strcmp(argv[j], "-catch") == 0 ||

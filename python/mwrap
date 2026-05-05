@@ -54,7 +54,7 @@ Syntax:
 
 USAGE_STRING = """\
 Usage: mwrap [-mex outputmex | -cppmex outputcpp | -oct outputoct | -fmex outputfmex] [-m output.m] [-c output.c] infile1 ...
-Try 'mwrap --help' for more information.
+Try 'mwrap -h' or 'mwrap --help' for more information.
 """
 
 
@@ -89,7 +89,7 @@ def _load_fmex_support():
 def _build_parser():
     """Build the argparse argument parser."""
     p = argparse.ArgumentParser(add_help=False)
-    p.add_argument('--help', action='store_true', dest='help')
+    p.add_argument('-h', '--help', action='store_true', dest='help')
     p.add_argument('-m', dest='mfile')
     p.add_argument('-c', dest='cfile')
     p.add_argument('-mex', dest='mexfunc', default='mexfunction')
