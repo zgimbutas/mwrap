@@ -4,26 +4,26 @@
 /build*/
 
 mwrap
+src/*.o
 src/lex.yy.c
-src/lex.yy.o
-src/mwrap-ast.o
-src/mwrap-cgen.o
-src/mwrap-mgen.o
 src/mwrap.y
 src/mwrap.cc
 src/mwrap.hh
 src/mwrap-support.h
 src/mwrap-cpp-support.h
 src/mwrap-oct-support.h
-src/mwrap-typecheck.o
-src/mwrap.o
+src/mwrap-fmex-support.h
 src/mwrap.output
 src/stringify
 
-testing/test_fortran1mex.cc
-testing/test_fortran2mex.c
+testing/test_*mex.c
+testing/test_*mex.cc
+testing/test_*mex.cu
+testing/test_gpu*.cu
+testing/test_cpu*.cc
+testing/*.mex*
 testing/test_include.m
-testing/test_includemex.cc
 testing/test_syntax.log
+testing/test_typecheck.log
 
 __pycache__/

@@ -4,10 +4,11 @@ include ../make.inc
 # === Primary targets ===
 
 ../mwrap: mwrap.o lex.yy.o mwrap-ast.o mwrap-typecheck.o \
-	mwrap-mgen.o mwrap-cgen.o mwrap-octgen.o mwrap-cppgen.o mwrap-ast.h
+	mwrap-mgen.o mwrap-cgen.o mwrap-octgen.o mwrap-cppgen.o \
+	mwrap-fmexgen.o mwrap-ast.h
 	$(CXX) -o ../mwrap mwrap.o mwrap-ast.o \
 		mwrap-typecheck.o mwrap-mgen.o mwrap-cgen.o \
-		mwrap-octgen.o mwrap-cppgen.o \
+		mwrap-octgen.o mwrap-cppgen.o mwrap-fmexgen.o \
 		lex.yy.o
 
 mwrap.o: mwrap.cc lex.yy.c mwrap-ast.h
@@ -49,6 +50,9 @@ mwrap-octgen.o: mwrap-octgen.cc mwrap-ast.h mwrap-oct-support.h
 mwrap-cppgen.o: mwrap-cppgen.cc mwrap-ast.h mwrap-cpp-support.h
 	$(CXX) -c -g mwrap-cppgen.cc
 
+mwrap-fmexgen.o: mwrap-fmexgen.cc mwrap-ast.h mwrap-fmex-support.h
+	$(CXX) -c -g mwrap-fmexgen.cc
+
 mwrap-support.h: mwrap-support.c stringify
 	./stringify mex_header < mwrap-support.c > mwrap-support.h
 
@@ -57,6 +61,9 @@ mwrap-oct-support.h: mwrap-oct-support.c stringify
 
 mwrap-cpp-support.h: mwrap-cpp-support.c stringify
 	./stringify cpp_header < mwrap-cpp-support.c > mwrap-cpp-support.h
+
+mwrap-fmex-support.h: mwrap-fmex-support.f90 stringify
+	./stringify fmex_header < mwrap-fmex-support.f90 > mwrap-fmex-support.h
 
 stringify: stringify.c
 	$(CC) -o stringify stringify.c
@@ -70,4 +77,4 @@ clean:
 	rm -f stringify
 
 realclean: clean
-	rm -f mwrap.y lex.yy.c mwrap.cc mwrap.hh mwrap-support.h mwrap-oct-support.h mwrap-cpp-support.h
+	rm -f mwrap.y lex.yy.c mwrap.cc mwrap.hh mwrap-support.h mwrap-oct-support.h mwrap-cpp-support.h mwrap-fmex-support.h

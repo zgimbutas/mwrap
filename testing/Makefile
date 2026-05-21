@@ -4,7 +4,8 @@ MWRAP = ../mwrap
 
 all: test_transfers test_cpp_complex $(TESTC99COMPLEX) test_syntax \
 	test_typecheck test_catch test_fortran1 test_fortran2 \
-	test_redirect test_include test_single_cpp test_char_cpp
+	test_redirect test_include test_single_cpp test_char_cpp \
+	test_nocopy_cpp
 # run the tests...
 	octave-cli --no-init-file --quiet test_all.m
 
@@ -90,11 +91,18 @@ test_single_cpp:
 		-mb test_single.mw
 	$(MEX) test_singlemex.cc
 
-test_single_c99: 
+test_single_c99:
 	$(MWRAP) -c99complex -mex test_singlemex \
 		-c test_singlemex.c \
 		-mb test_single.mw
 	$(MEX) test_singlemex.c
+
+# tested by test_nocopy.m ...
+test_nocopy_cpp:
+	$(MWRAP) -cppcomplex -mex test_nocopymex \
+		-c test_nocopymex.cc \
+		-mb test_nocopy.mw
+	$(MEX) test_nocopymex.cc
 
 test_gpu:
 	$(MWRAP) -gpu -list -cppcomplex -mb -mex test_gpu -c test_gpu.cu test_gpu.mw
@@ -133,3 +141,8 @@ clean:
 	rm -f addchar.m arraddchar.m
 	rm -f test_cpu.cc timestwo_cpu.m
 	rm -f test_cpu_int32.cc timestwo_cpu_int32.m
+	rm -f test_nocopymex.cc
+	rm -f nocopy_timestwo_double.m nocopy_inplace_double.m
+	rm -f nocopy_timestwo_float.m nocopy_inplace_float.m
+	rm -f nocopy_timestwo_dcomplex.m nocopy_inplace_dcomplex.m
+	rm -f nocopy_timestwo_fcomplex.m nocopy_inplace_fcomplex.m
