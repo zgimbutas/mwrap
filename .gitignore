@@ -22,8 +22,22 @@ testing/test_*mex.cu
 testing/test_gpu*.cu
 testing/test_cpu*.cc
 testing/*.mex*
-testing/test_include.m
 testing/test_syntax.log
 testing/test_typecheck.log
+
+# Generated MATLAB stubs from .mw sources
+testing/add*.m
+testing/arradd*.m
+testing/nocopy_*.m
+testing/timestwo*.m
+testing/test_c99_complex.m
+testing/test_catch.m
+testing/test_cpp_complex.m
+testing/test_fortran1.m
+testing/test_fortran2.m
+testing/test_include.m
+testing/test_redirect.m
+testing/test_redirect1.m
+testing/test_transfers.m
 
 __pycache__/
