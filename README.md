@@ -2,22 +2,33 @@ MWrap
 =====
 
 MWrap is an interface generation system in the spirit of SWIG or matwrap.
-From a set of augmented MATLAB script files, it generates a MEX gateway to desired C/C++/Fortran function calls and MATLAB function files to access that gateway, hiding the details of converting to and from MATLAB's data structures and of allocating and freeing temporary storage.
-It is also compatible with modern Octave via `mkoctfile --mex`.
-It makes wrapping C/C++/Fortran from MATLAB almost pleasant!
+**It makes wrapping C/C++/Fortran/CUDA from MATLAB almost pleasant!**
+From a set of augmented MATLAB script files, it generates a MEX gateway to the desired C/C++/Fortran/CUDA function calls, and also generates MATLAB function files to access that gateway. It hides the details of converting to and from MATLAB's data structures, and of allocating and freeing temporary storage.
+It is compatible with modern GNU Octave via `mkoctfile --mex`.
+It also includes `gpuArray` support (for MATLAB/CUDA only).
 
-MWrap was created by David Bindel, who hosts his old version
-at https://www.cs.cornell.edu/~bindel/sw/mwrap
+MWrap was originally created by David Bindel in 2009.
+Some simple (including OpenMP) demos are to be found at
+[MWrapDemo](https://github.com/ahbarnett/mwrapdemo).
+MWrap is now used in many projects including
+[FINUFFT](https://finufft.readthedocs.io),
+[FMM2D](https://fmm2d.readthedocs.io),
+[FMM3D](https://fmm3d.readthedocs.io), and
+[FMM3DBIE](https://fmm3dbie.readthedocs.io).
+
+Users may also be interested in the new MATLAB package manager [mip](https://mip.sh/) which includes MEX interface generation.
+
 
 Dependencies
 ------------
 
-Building MWrap requires the following tools:
+Building MWrap needs the following tools:
 
 * A C compiler with C99 support and a C++ compiler with C++11 support
 * [Bison](https://www.gnu.org/software/bison/) and [Flex](https://github.com/westes/flex)
 * (Optional) [CMake](https://cmake.org/) 3.16 or newer (for the CMake build path)
 * (Optional) [MATLAB](https://www.mathworks.com/products/matlab.html) with MEX build tooling when compiling wrappers with CMake
+* (Optional) MATLAB Parallel Computing Toolbox, and CUDA Toolkit, if you want to wrap `gpuArray` objects.
 
 If you are using a Debian or Ubuntu based system, the required packages can be
 installed via
@@ -29,9 +40,12 @@ sudo apt-get install build-essential bison flex cmake
 Makefile build
 --------------
 
-Edit `make.inc` and then run `make`.  The output will be a
+Edit `make.inc` (this decides whether `MEX` uses MATLAB vs Octave build),
+and then run `make`.  The output will be a
 standalone executable (`mwrap`) in the main directory.  Bison and Flex are
-required for this build path.
+required for this build path. Then to make the examples use `make demo`,
+then cd to subdirectories of `example/` and try each out using MATLAB or Octave as appropriate.
+
 
 CMake build
 -----------
@@ -102,13 +116,16 @@ David Bindel's user's guide (`mwrap.pdf`) describes MWrap in detail; you can als
 Alex Barnett also maintains a set of minimally complete tutorial examples of calling C/Fortran libraries (including OpenMP) from MATLAB/Octave, using MWrap, at https://github.com/ahbarnett/mwrapdemo
 
 The `mwrap.1` man page was written by Nicolas Bourdaud.
+It should be manually placed in `/usr/local/share/man/man1/`, for instance.
 
 
 Contributors and version history
 --------------------------------
 
 MWrap was originally written by David Bindel, c. 2009.
-It was moved to github in c. 2015 in order to add new features, and is now maintained by Zydrunas Gimbutas, Alex Barnett, Libin Lu, Manas Rachh, Rafael Laboissière, and Marco Barbone.
+He hosts his old version at https://www.cs.cornell.edu/~bindel/sw/mwrap
+This is unsupported; we recommend that you use the current version.
+It was moved to github in around 2015 in order to add new features, and is now maintained by Zydrunas Gimbutas, Alex Barnett, Libin Lu, Manas Rachh, Rafael Laboissière, and Marco Barbone.
 
 **Version 0.33** (c. 2009)
 Author: David Bindel <bindel@cs.cornell.edu>
