@@ -153,7 +153,6 @@ Contributors: Libin Lu, Rafael Laboissière, Zydrunas Gimbutas.
 Contributors: Marco Barbone, Zydrunas Gimbutas.
 - Add CMake build system and GitHub Actions CI
 - Validate input files before processing to prevent data loss
-- Optimize MEX dispatch with integer ID + function pointer table
 - Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add Python mwrap implementation
 
