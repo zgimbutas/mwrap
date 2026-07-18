@@ -196,9 +196,11 @@ def _typecheck_args(ctx, args, line):
             if (v.iospec != 'o' and
                     v.tinfo in (VT.obj, VT.p_obj, VT.r_obj, VT.string)):
                 # Object/string inputs compiled with the gpu qualifier as a
-                # no-op in 1.2; keep accepting them with a warning.
+                # no-op in 1.2; keep accepting them with a warning, and
+                # clear the qualifier so codegen really does ignore it.
                 print(f"Warning ({line}): gpu qualifier on non-array {v.name} is ignored",
                       file=sys.stderr)
+                v.devicespec = 'c'
             else:
                 print(f"Error ({line}): gpu variable {v.name} must be a numeric array",
                       file=sys.stderr)

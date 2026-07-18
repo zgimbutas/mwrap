@@ -304,7 +304,9 @@ string id_string(Var* v)
         name += "o ";
     else
         name += "io ";
-    name += promote_int(v->basetype);
+    /* basetype was already promoted at parse time; promote_int would
+       free and replace a string this Var still owns. */
+    name += v->basetype;
     name += id_string(v->qual);
     if (v->tinfo == VT_const) {
         name += " ";

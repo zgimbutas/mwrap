@@ -402,7 +402,10 @@ int main(int argc, char** argv)
                         print_mex_init(outcfp);
                         emitted_mex_init = true;
                     }
-                    err_flag += yyparse();
+                    /* Recovered and unrecovered syntax errors alike are
+                       counted by yyerror via syntax_errs; adding yyparse's
+                       return here would double-count the unrecovered ones. */
+                    yyparse();
                     fclose(yyin);
                 } else {
                     fprintf(stderr, "Could not read %s\n", argv[j]);
@@ -423,5 +426,7 @@ int main(int argc, char** argv)
         fclose(outfp);
     if (outcfp)
         fclose(outcfp);
-    return err_flag;
+    /* POSIX keeps only 8 bits of the exit status; returning the raw
+       error count would report success at exact multiples of 256. */
+    return err_flag ? 1 : 0;
 }

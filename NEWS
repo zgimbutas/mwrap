@@ -17,8 +17,9 @@ Make doc/test/demo phony targets in the root Makefile, have make test
 Fix crash when an @include appears in the second or later input file
 Fix stack buffer overflow on type or class names longer than 127 characters
 Reject gpu qualifier on non-array arguments that crashed the generator
-  or produced non-compiling code; object/string inputs, where the
-  qualifier was a working no-op, are still accepted with a warning
+  or produced non-compiling code; object/string inputs are still
+  accepted with a warning, and the qualifier is cleared so the
+  generated code is genuinely unaffected
 Exit with an error when an input file cannot be read or an output file
   cannot be written, instead of silently succeeding
 Exit with an error and suppress C output when an input file contains
@@ -40,6 +41,11 @@ Fix crash when a real (non-complex) scalar is passed to a complex argument
 Reject empty arrays passed to complex scalar arguments instead of crashing
 Reject complex arrays passed to real double/float array input arguments
   with the Matlab R2018a interleaved complex API instead of crashing
+  (pre-2018a builds continue to use the real part silently, as before)
+Fix generated '*profile report*' and '*profile log*' commands crashing
+  Matlab/Octave when called before '*profile on*'
+Exit with status 1 on any error instead of the raw error count, which
+  wrapped to a success status at exact multiples of 256
 
 Version 1.3 (Feb 23, 2026):
 Added CMake build system and GitHub Actions CI

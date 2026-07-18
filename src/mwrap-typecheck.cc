@@ -311,10 +311,12 @@ int typecheck_args(Var* v, int line)
             (v->tinfo == VT_obj || v->tinfo == VT_p_obj ||
              v->tinfo == VT_r_obj || v->tinfo == VT_string)) {
             /* Object/string inputs compiled with the gpu qualifier as a
-               no-op in 1.2; keep accepting them with a warning. */
+               no-op in 1.2; keep accepting them with a warning, and clear
+               the qualifier so codegen really does ignore it. */
             fprintf(stderr, "Warning (%d): ", line);
             fprintf(stderr, "gpu qualifier on non-array %s is ignored\n",
                     v->name);
+            v->devicespec = 'c';
         } else {
             fprintf(stderr, "Error (%d): ", line);
             fprintf(stderr, "gpu variable %s must be a numeric array\n",

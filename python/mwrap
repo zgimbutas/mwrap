@@ -171,7 +171,9 @@ def main():
     if outcfp:
         outcfp.close()
 
-    return err_flag
+    # POSIX keeps only 8 bits of the exit status; returning the raw
+    # error count would report success at exact multiples of 256.
+    return 1 if err_flag else 0
 
 
 if __name__ == "__main__":

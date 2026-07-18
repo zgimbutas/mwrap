@@ -242,7 +242,9 @@ def _id_var_single(ctx, v: Var) -> str:
     elif io == 'o': name += "o "
     else:           name += "io "
 
-    name += promote_int(ctx, v.basetype)
+    # basetype was already promoted at parse time (mirrors the C++ side,
+    # where a second promote_int call would free a live string)
+    name += v.basetype
     name += _id_qual(v.qual)
     if v.tinfo == VT.const:
         name += " " + v.name

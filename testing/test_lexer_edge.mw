@@ -14,7 +14,7 @@ $[
 
 $[ /* one-line $[ is not a block start; this goes through the $ rule */ $]
 
-@include test_include2.mw
+@include test_include2.mw test_include2.mw
 
 % Post-include declaration: pins file/line provenance after an @include
 # double[n] y = scalevec(double[m] x, int n, int m);

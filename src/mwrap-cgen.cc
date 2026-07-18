@@ -1596,7 +1596,8 @@ void make_profile_output(FILE* fp, Func* f, const char* printfunc)
 {
     fprintf(fp,
             "        if (!mexprofrecord_)\n"
-            "            %s\"Profiler inactive\\n\");\n",
+            "            %s\"Profiler inactive\\n\");\n"
+            "        else {\n",
             printfunc);
     for (; f; f = f->next) {
         fprintf(fp, "        %s\"%%d calls to %s:%d",
@@ -1605,6 +1606,7 @@ void make_profile_output(FILE* fp, Func* f, const char* printfunc)
             fprintf(fp, " (%s:%d)", fsame->fname.c_str(), fsame->line);
         fprintf(fp, "\\n\", mexprofrecord_[%d]);\n", f->id);
     }
+    fprintf(fp, "        }\n");
 }
 
 
