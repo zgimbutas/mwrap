@@ -75,8 +75,8 @@ Generator. File correspondence:
 
 ```bash
 make          # or `make bin`: builds ./mwrap (requires flex + bison)
-make test     # generates, compiles (mkoctfile --mex), and runs the test
-              # suite under Octave — currently requires `make bin` first
+make test     # builds mwrap, then generates, compiles (mkoctfile --mex),
+              # and runs the test suite under Octave
 ```
 
 `make.inc` selects the MEX backend (MATLAB `mex` vs Octave `mkoctfile --mex`)
@@ -89,12 +89,11 @@ mkdir -p build && cd build && cmake .. && cmake --build .
 ctest                       # test_syntax + test_typecheck log tests
 ```
 
-Options: `MWRAP_ENABLE_MATLAB_CLASSDEF` (adds `-DR2008OO` — only meaningful
-for MEX compilation via `cmake/MwrapAddMex.cmake`), `MWRAP_BUILD_EXAMPLES`,
+Options: `MWRAP_ENABLE_MATLAB_CLASSDEF` (adds `-DR2008OO` to MEX wrappers
+compiled via `cmake/MwrapAddMex.cmake`), `MWRAP_BUILD_EXAMPLES`,
 `MWRAP_COMPILE_MEX`, `MWRAP_MEX_BACKEND=MATLAB|OCTAVE|ALL`.
-Caveat: `MWRAP_ENABLE_C99_COMPLEX` / `MWRAP_ENABLE_CPP_COMPLEX` are currently
-**no-ops** — complex support is selected per run with the `-c99complex` /
-`-cppcomplex` command-line flags, not at build time.
+Complex support is not a build option — it is selected per run with the
+`-c99complex` / `-cppcomplex` command-line flags.
 
 ### Python version
 
