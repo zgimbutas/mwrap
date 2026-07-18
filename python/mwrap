@@ -22,10 +22,11 @@ from mwrap_ast import MwrapContext
 from mwrap_lexer import Lexer
 from mwrap_parser import Parser
 from mwrap_cgen import print_mex_init, print_mex_file
+from mwrap_version import __version__
 
 
-HELP_STRING = """\
-mwrap 1.3 - MEX file generator for MATLAB and Octave
+HELP_STRING = f"""\
+mwrap {__version__} - MEX file generator for MATLAB and Octave
 
 Syntax:
   mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]
@@ -106,15 +107,25 @@ def main():
 
     if not args.input_files:
         sys.stderr.write(USAGE_STRING)
-        return 0
+        return 1
 
     # --- Open output files ---
     outfp = None
     outcfp = None
     if args.mfile:
-        outfp = open(args.mfile, "w")
+        try:
+            outfp = open(args.mfile, "w")
+        except OSError:
+            sys.stderr.write(f"Could not write {args.mfile}\n")
+            return 1
     if args.cfile:
-        outcfp = open(args.cfile, "w")
+        try:
+            outcfp = open(args.cfile, "w")
+        except OSError:
+            sys.stderr.write(f"Could not write {args.cfile}\n")
+            if outfp:
+                outfp.close()
+            return 1
 
     # --- Create lexer and parser ---
     lexer = Lexer(outfp=outfp, outcfp=outcfp,
@@ -134,6 +145,7 @@ def main():
             fp_test.close()
         except OSError:
             sys.stderr.write(f"Could not read {infile}\n")
+            err_flag += 1
             continue
 
         lexer.current_ifname = infile
@@ -159,7 +171,9 @@ def main():
     if outcfp:
         outcfp.close()
 
-    return err_flag
+    # POSIX keeps only 8 bits of the exit status; returning the raw
+    # error count would report success at exact multiples of 256.
+    return 1 if err_flag else 0
 
 
 if __name__ == "__main__":

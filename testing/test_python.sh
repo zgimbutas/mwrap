@@ -105,11 +105,13 @@ run_equiv_test() {
     local mex_name="${name}mex"
     local cc_file="${mex_name}${cc_ext}"
 
-    # Copy test_include2.mw if needed (for @include)
-    if [ -f "$SCRIPT_DIR/test_include2.mw" ]; then
-        cp "$SCRIPT_DIR/test_include2.mw" "$cpp_dir/"
-        cp "$SCRIPT_DIR/test_include2.mw" "$py_dir/"
-    fi
+    # Copy included .mw files if present (for @include)
+    for inc in test_include2.mw test_include3.mw; do
+        if [ -f "$SCRIPT_DIR/$inc" ]; then
+            cp "$SCRIPT_DIR/$inc" "$cpp_dir/"
+            cp "$SCRIPT_DIR/$inc" "$py_dir/"
+        fi
+    done
 
     local cpp_args=(-mex "$mex_name" -c "$cc_file")
     local py_args=(-mex "$mex_name" -c "$cc_file")
@@ -191,6 +193,13 @@ run_equiv_test test_single \
 run_equiv_test test_char \
     "$SCRIPT_DIR/test_char.mw" .cc no \
     -cppcomplex
+
+run_equiv_test test_lexer_edge \
+    "$SCRIPT_DIR/test_lexer_edge.mw" .cc yes
+
+run_equiv_test test_i8 \
+    "$SCRIPT_DIR/test_transfers.mw" .cc yes \
+    -i8
 
 # ----------------------------------------------------------------
 # Summary

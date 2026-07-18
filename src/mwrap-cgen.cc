@@ -12,6 +12,7 @@
 #include <cassert>
 #include "mwrap-ast.h"
 #include "mwrap-support.h"
+#include "mwrap-version.h"
 
 
 /* -- General utility functions -- */
@@ -79,14 +80,17 @@ bool nullable_return(Func* f)
 
 
 /*
- * Get the name of a variable into the provided buffer.
+ * Get the name of a variable into the provided buffer, which must
+ * have room for at least VNAME_BUFSIZE bytes.
  */
+static const size_t VNAME_BUFSIZE = 128;
+
 const char* vname(Var* v, char* buf)
 {
     if (v->iospec == 'o')
-        sprintf(buf, "out%d_", v->output_label);
+        snprintf(buf, VNAME_BUFSIZE, "out%d_", v->output_label);
     else
-        sprintf(buf, "in%d_", v->input_label);
+        snprintf(buf, VNAME_BUFSIZE, "in%d_", v->input_label);
     return buf;
 }
 
@@ -538,22 +542,22 @@ void mex_cast_get_p(FILE* fp, const char* basetype, int input_label)
  */
 
 
-void mex_declare_type(char* typebuf, Var* v)
+string mex_declare_type(Var* v)
 {
     if (is_obj(v->tinfo) || is_array(v->tinfo)){
         if(v->devicespec == 'g'){
-            sprintf(typebuf, "%s*", basetype_to_cucomplex(v->basetype));
+            return string(basetype_to_cucomplex(v->basetype)) + "*";
         }
         else{
-            sprintf(typebuf, "%s*", v->basetype);
+            return string(v->basetype) + "*";
         }
     }
     else if (v->tinfo == VT_rarray){
         if(v->devicespec == 'g'){
-            sprintf(typebuf, "const %s*", basetype_to_cucomplex(v->basetype));
+            return string("const ") + basetype_to_cucomplex(v->basetype) + "*";
         }
         else{
-            sprintf(typebuf, "const %s*", v->basetype);
+            return string("const ") + v->basetype + "*";
         }
     }
     else if (v->tinfo == VT_scalar ||
@@ -565,16 +569,17 @@ void mex_declare_type(char* typebuf, Var* v)
              v->tinfo == VT_p_scalar ||
              v->tinfo == VT_p_cscalar ||
              v->tinfo == VT_p_zscalar)
-        sprintf(typebuf, "%s", v->basetype);
+        return string(v->basetype);
     else if (v->tinfo == VT_string)
-        sprintf(typebuf, "char*");
+        return string("char*");
     else if (v->tinfo == VT_mx && v->iospec == 'i')
-        sprintf(typebuf, "const mxArray*");
+        return string("const mxArray*");
     else if (v->tinfo == VT_mx && v->iospec == 'o')
-        sprintf(typebuf, "mxArray*");
+        return string("mxArray*");
     else {
         fprintf(stderr, "v->tinfo == %d; v->name = %s\n", v->tinfo, v->name);
         assert(0);
+        return string();
     }
 }
 
@@ -584,18 +589,17 @@ void mex_declare_in_args(FILE* fp, Var* v)
     if (!v)
         return;
     if (v->iospec != 'o' && v->tinfo != VT_const) {
-        char typebuf[128];
-        mex_declare_type(typebuf, v);
+        string typebuf = mex_declare_type(v);
         if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
             fprintf(fp, "    %-10s  in%d_ =0; /* %-10s */\n",
-                    typebuf, v->input_label, v->name);
+                    typebuf.c_str(), v->input_label, v->name);
             if(v->devicespec == 'g'){
                 fprintf(fp, "    %-10s *mxGPUArray_in%d_ =0; /* %-10s */\n",
                        "mxGPUArray const", v->input_label, v->name);
             }
         } else {
             fprintf(fp, "    %-10s  in%d_;    /* %-10s */\n",
-                    typebuf, v->input_label, v->name);
+                    typebuf.c_str(), v->input_label, v->name);
         }
     }
     mex_declare_in_args(fp, v->next);
@@ -607,11 +611,10 @@ void mex_declare_out_args(FILE* fp, Var* v)
     if (!v)
         return;
     if (v->iospec == 'o' && v->tinfo != VT_mx) {
-        char typebuf[128];
-        mex_declare_type(typebuf, v);
+        string typebuf = mex_declare_type(v);
         if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
             fprintf(fp, "    %-10s  out%d_=0; /* %-10s */\n",
-                    typebuf, v->output_label, v->name);
+                    typebuf.c_str(), v->output_label, v->name);
             if(v->devicespec == 'g'){
                 fprintf(fp, "    %-10s *mxGPUArray_out%d_ =0; /* %-10s */\n",
                        "mxGPUArray", v->output_label, v->name);
@@ -620,7 +623,7 @@ void mex_declare_out_args(FILE* fp, Var* v)
             }
         } else {
             fprintf(fp, "    %-10s  out%d_;   /* %-10s */\n",
-                    typebuf, v->output_label, v->name);
+                    typebuf.c_str(), v->output_label, v->name);
         }
     }
     mex_declare_out_args(fp, v->next);
@@ -656,11 +659,9 @@ void mex_declare_return(FILE* fp, Var* v)
 void mex_declare_args(FILE* fp, Func* f)
 {
     if (f->thisv) {
-        char typebuf[128];
-        strcpy(typebuf, f->classv);
-        strcat(typebuf, "*");
+        string typebuf = string(f->classv) + "*";
         fprintf(fp, "    %-10s  in%d_ =0; /* %-10s */\n",
-                typebuf, 0, f->thisv);
+                typebuf.c_str(), 0, f->thisv);
     }
     mex_declare_in_args(fp, f->args);
     if (!nullable_return(f))
@@ -704,7 +705,9 @@ int mex_unpack_dims(FILE* fp, Var* v)
 
 void mex_unpack_dims(FILE* fp, Func* f)
 {
-    if (mex_unpack_dims(fp, f->ret) || mex_unpack_dims(fp, f->args))
+    int count = mex_unpack_dims(fp, f->ret);
+    count += mex_unpack_dims(fp, f->args);
+    if (count)
         fprintf(fp, "\n");
 }
 
@@ -736,7 +739,7 @@ void mex_check_dims(FILE* fp, Var* v)
         } else {
             fprintf(fp,
                     "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != dim%d_) {\n"
-                    "        mw_err_txt_ = \"Bad argument size: %s\";"
+                    "        mw_err_txt_ = \"Bad argument size: %s\";\n"
                     "        goto mw_err_label;\n"
                     "    }\n\n",
                     v->input_label, v->input_label, a->input_label,
@@ -822,11 +825,15 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 		"            mw_err_txt_ = \"Invalid array argument, mxSINGLE_CLASS expected\";\n"
 		"        if (mw_err_txt_) goto mw_err_label;\n"
                 "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                "        if( mxIsComplex(prhs[%d]) )\n"
+                "            mw_err_txt_ = \"Invalid array argument, real data expected\";\n"
+                "        if (mw_err_txt_) goto mw_err_label;\n"
                 "        in%d_ = mxGetSingles(prhs[%d]);\n"
                 "#else\n"
                 "        in%d_ = (float*) mxGetData(prhs[%d]);\n"
                 "#endif\n",
-                v->input_label, v->input_label, v->input_label, v->input_label, v->input_label);
+                v->input_label, v->input_label, v->input_label, v->input_label,
+                v->input_label, v->input_label);
       else
         fprintf(fp,
                 "        in%d_ = mxWrapGetArray_single_%s(prhs[%d], &mw_err_txt_);\n"
@@ -840,11 +847,15 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 		"            mw_err_txt_ = \"Invalid array argument, mxDOUBLE_CLASS expected\";\n"
 		"        if (mw_err_txt_) goto mw_err_label;\n"
 		"#if MX_HAS_INTERLEAVED_COMPLEX\n"
+		"        if( mxIsComplex(prhs[%d]) )\n"
+		"            mw_err_txt_ = \"Invalid array argument, real data expected\";\n"
+		"        if (mw_err_txt_) goto mw_err_label;\n"
 		"        in%d_ = mxGetDoubles(prhs[%d]);\n"
 		"#else\n"
 		"        in%d_ = mxGetPr(prhs[%d]);\n"
 		"#endif\n",
-		v->input_label, v->input_label, v->input_label, v->input_label, v->input_label);
+		v->input_label, v->input_label, v->input_label, v->input_label,
+		v->input_label, v->input_label);
       }
       else
 		fprintf(fp,
@@ -960,8 +971,10 @@ void mex_unpack_inputs(FILE* fp, Var* v)
 	    fprintf(fp,
 		    "    if( mxGetClassID(prhs[%d]) != mxSINGLE_CLASS )\n"
 		    "        mw_err_txt_ = \"Invalid scalar argument, mxSINGLE_CLASS expected\";\n"
+		    "    if( mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 1 )\n"
+		    "        mw_err_txt_ = \"Invalid scalar argument, scalar expected\";\n"
 		    "    if (mw_err_txt_) goto mw_err_label;\n",
-		    v->input_label);
+		    v->input_label, v->input_label, v->input_label);
 	    fprintf(fp,
 		    "    mxWrapGetScalar_single_%s(&in%d_, prhs[%d]);\n\n",
 		    v->basetype, v->input_label, v->input_label);
@@ -971,8 +984,10 @@ void mex_unpack_inputs(FILE* fp, Var* v)
 	    fprintf(fp,
 		    "    if( mxGetClassID(prhs[%d]) != mxDOUBLE_CLASS )\n"
 		    "        mw_err_txt_ = \"Invalid scalar argument, mxDOUBLE_CLASS expected\";\n"
+		    "    if( mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 1 )\n"
+		    "        mw_err_txt_ = \"Invalid scalar argument, scalar expected\";\n"
 		    "    if (mw_err_txt_) goto mw_err_label;\n",
-		    v->input_label);
+		    v->input_label, v->input_label, v->input_label);
 	    fprintf(fp,
 		    "    mxWrapGetScalar_%s(&in%d_, prhs[%d]);\n\n",
 		    v->basetype, v->input_label, v->input_label);
@@ -1123,7 +1138,7 @@ void mex_make_call(FILE* fp, Var* v, int first)
     if (!first)
         fprintf(fp, ", ");
 
-    char namebuf[128];
+    char namebuf[VNAME_BUFSIZE];
     if (v->tinfo == VT_obj || v->tinfo == VT_r_obj)
         fprintf(fp, "*%s", vname(v, namebuf));
     else if (v->tinfo == VT_mx && v->iospec == 'o')
@@ -1280,7 +1295,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 {
     if (v->devicespec != 'g'){
     Expr* e = v->qual->args;
-    char namebuf[128];
+    char namebuf[VNAME_BUFSIZE];
     const char* mtype = complex_tinfo(v) ? "mxCOMPLEX" : "mxREAL";
     const char* ws = "    ";
 
@@ -1404,7 +1419,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 
 void mex_marshal_result(FILE* fp, Var* v, bool return_flag)
 {
-    char namebuf[1280];
+    char namebuf[VNAME_BUFSIZE];
     if (is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
         if (!return_flag)
             fprintf(fp, "    plhs[%d] = mxWrapSet_%s(%s);\n",
@@ -1535,7 +1550,7 @@ void print_c_comment(FILE* fp, Func* f)
 {
     fprintf(fp, "/* ---- %s: %d ----\n * ", f->fname.c_str(), f->line);
     print(fp, f);
-    for (Func* fsame = f->same_next; fsame; fsame = fsame->next)
+    for (Func* fsame = f->same_next; fsame; fsame = fsame->same_next)
         fprintf(fp, " * Also at %s: %d\n", fsame->fname.c_str(), fsame->line);
     fprintf(fp, " */\n");
 }
@@ -1581,15 +1596,17 @@ void make_profile_output(FILE* fp, Func* f, const char* printfunc)
 {
     fprintf(fp,
             "        if (!mexprofrecord_)\n"
-            "            %s\"Profiler inactive\\n\");\n",
+            "            %s\"Profiler inactive\\n\");\n"
+            "        else {\n",
             printfunc);
     for (; f; f = f->next) {
         fprintf(fp, "        %s\"%%d calls to %s:%d",
                 printfunc, f->fname.c_str(), f->line);
-        for (Func* fsame = f->same_next; fsame; fsame = fsame->next)
+        for (Func* fsame = f->same_next; fsame; fsame = fsame->same_next)
             fprintf(fp, " (%s:%d)", fsame->fname.c_str(), fsame->line);
         fprintf(fp, "\\n\", mexprofrecord_[%d]);\n", f->id);
     }
+    fprintf(fp, "        }\n");
 }
 
 
@@ -1716,6 +1733,7 @@ void print_mex_init(FILE* fp)
 {
 
     fprintf(fp, "%s", mwrap_banner);
+    fprintf(fp, "/* Code generated by mwrap %s */\n", MWRAP_VERSION);
     fprintf(fp, "%s", mex_header);
 
     fprintf(fp, "\n");

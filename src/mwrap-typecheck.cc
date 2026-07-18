@@ -275,7 +275,7 @@ int typecheck_return(Var* v, int line)
     int err = assign_tinfo(v, line);
     if ((v->tinfo == VT_array ||
          v->tinfo == VT_carray ||
-         v->tinfo == VT_zarray) && 
+         v->tinfo == VT_zarray) &&
         !(v->qual && v->qual->args)) {
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Return array %s must have dims\n", v->name);
@@ -304,6 +304,28 @@ int typecheck_args(Var* v, int line)
         return 0;
 
     int err = assign_tinfo(v, line);
+    if (v->devicespec == 'g' &&
+        v->tinfo != VT_array && v->tinfo != VT_carray &&
+        v->tinfo != VT_zarray) {
+        if (v->iospec != 'o' &&
+            (v->tinfo == VT_obj || v->tinfo == VT_p_obj ||
+             v->tinfo == VT_r_obj || v->tinfo == VT_string)) {
+            /* Object/string inputs compiled with the gpu qualifier as a
+               no-op in 1.2; keep accepting them with a warning, and clear
+               the qualifier so codegen really does ignore it.  This relies
+               on typecheck running before the .m stub is printed and
+               before codegen reads devicespec (grammar action order). */
+            fprintf(stderr, "Warning (%d): ", line);
+            fprintf(stderr, "gpu qualifier on non-array %s is ignored\n",
+                    v->name);
+            v->devicespec = 'c';
+        } else {
+            fprintf(stderr, "Error (%d): ", line);
+            fprintf(stderr, "gpu variable %s must be a numeric array\n",
+                    v->name);
+            ++err;
+        }
+    }
     if (v->iospec == 'i')
         return err + typecheck_args(v->next, line);
 
@@ -327,7 +349,7 @@ int typecheck_args(Var* v, int line)
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Output array %s must have dims\n", v->name);
         ++err;
-    } else if (v->tinfo == VT_rarray && v->iospec != 'o' && v->iospec != 'b') {
+    } else if (v->tinfo == VT_rarray && v->iospec != 'o') {
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Array ref %s *must* be output\n", v->name);
         ++err;

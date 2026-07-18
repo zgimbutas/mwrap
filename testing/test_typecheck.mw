@@ -14,6 +14,10 @@ function badmojo
 # get34(output fcomplex[] z);
 # get34(output dcomplex[] z);
 # get(output int[1,2,3] z);
+# scale(gpu double x);
+# scale(gpu output double* y);
+# scale2(gpu cstring s);
+# scale3(inout double[]& x);
 # typedef bozo byte;
 %# An okay line -- should be ignored, since it doesn't start with #
 # // Another okay line -- comments should be ignored

@@ -4,9 +4,7 @@ project(mwrap LANGUAGES C CXX)
 
 include(CTest)
 
-option(MWRAP_ENABLE_MATLAB_CLASSDEF "Enable MATLAB classdef support (adds -DR2008OO)" OFF)
-option(MWRAP_ENABLE_C99_COMPLEX "Enable C99 complex support helpers" OFF)
-option(MWRAP_ENABLE_CPP_COMPLEX "Enable C++ complex support helpers" OFF)
+option(MWRAP_ENABLE_MATLAB_CLASSDEF "Compile generated MEX wrappers with -DR2008OO (MATLAB classdef support)" OFF)
 option(MWRAP_BUILD_EXAMPLES "Build the MATLAB/Octave examples" OFF)
 option(MWRAP_COMPILE_MEX "Compile generated wrappers into MEX binaries" OFF)
 set(MWRAP_MEX_BACKEND "MATLAB" CACHE STRING "Select the MEX backend to use (MATLAB, OCTAVE, or ALL)")

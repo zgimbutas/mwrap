@@ -12,5 +12,9 @@ Error (13): Output array z must have dims
 Error (14): Output array z must have dims
 Error (15): Output array z must have dims
 Error (16): Array z should be 1D or 2D
+Error (17): gpu variable x must be a numeric array
+Error (18): gpu variable y must be a numeric array
+Warning (19): gpu qualifier on non-array s is ignored
+Error (20): Array ref x *must* be output
 Unrecognized typespace: bozo
-test_typecheck.mw: 15 type errors detected
+test_typecheck.mw: 18 type errors detected

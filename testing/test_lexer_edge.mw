@@ -1,0 +1,22 @@
+% Lexer edge cases pinned for C++/Python parity (test_python.sh only;
+% the generated C is compared byte-for-byte but never compiled).
+function test_lexer_edge()
+
+% The very first parsed call is duplicated immediately (pins add_func's
+% first-occurrence registration) and again further down (pins the full
+% same_next chain in "Also at" comments and the profiler report).
+# double s = dupfirst(double a);
+# double s = dupfirst(double a);
+
+$[
+/* block C section closed by an indented terminator */
+  $]
+
+$[ /* one-line $[ is not a block start; this goes through the $ rule */ $]
+
+@include test_include2.mw test_include3.mw
+
+% Post-include declaration: pins file/line provenance after an @include
+# double[n] y = scalevec(double[m] x, int n, int m);
+
+# double s = dupfirst(double a);

@@ -17,6 +17,21 @@ tassert(abs(result-sum(zarray)) < 1e-10*norm(zarray), 'C++ complex support');
 # dcomplex cresult = conj(dcomplex result);
 tassert(conj(result) == cresult, 'C++ complex support (2)');
 
+% Real (non-complex) scalar into a dcomplex argument must be accepted
+rscalar = 3.25;
+# dcomplex rresult = conj(dcomplex rscalar);
+tassert(rresult == 3.25, 'real scalar into dcomplex argument');
+
+% Empty array into a dcomplex argument must raise an error, not crash
+empty_arg = [];
+caught = false;
+try
+  # dcomplex eresult = conj(dcomplex empty_arg);
+catch
+  caught = true;
+end
+tassert(caught, 'empty array into dcomplex argument');
+
 
 function tassert(pred, msg)
 if ~pred, fprintf('Failure: %s\n', msg); end

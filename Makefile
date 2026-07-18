@@ -1,12 +1,14 @@
 include make.inc
 
+.PHONY: bin doc test demo clean realclean
+
 bin:
 	(cd src; make)
 
 doc:
 	(cd doc; make)
 
-test: 
+test: bin
 	(cd testing; make)
 
 demo:

@@ -192,6 +192,22 @@ def _typecheck_args(ctx, args, line):
     for v in args:
         err += assign_tinfo(ctx, v, line)
 
+        if v.devicespec == 'g' and v.tinfo not in (VT.array, VT.carray, VT.zarray):
+            if (v.iospec != 'o' and
+                    v.tinfo in (VT.obj, VT.p_obj, VT.r_obj, VT.string)):
+                # Object/string inputs compiled with the gpu qualifier as a
+                # no-op in 1.2; keep accepting them with a warning, and
+                # clear the qualifier so codegen really does ignore it.
+                # Relies on typecheck running before print_matlab_call and
+                # codegen read devicespec (parser calls typecheck first).
+                print(f"Warning ({line}): gpu qualifier on non-array {v.name} is ignored",
+                      file=sys.stderr)
+                v.devicespec = 'c'
+            else:
+                print(f"Error ({line}): gpu variable {v.name} must be a numeric array",
+                      file=sys.stderr)
+                err += 1
+
         if iospec_is_inonly(v.iospec):
             continue
 
@@ -212,7 +228,7 @@ def _typecheck_args(ctx, args, line):
             print(f"Error ({line}): Output array {v.name} must have dims",
                   file=sys.stderr)
             err += 1
-        elif v.tinfo == VT.rarray and not iospec_is_output(v.iospec):
+        elif v.tinfo == VT.rarray and v.iospec != 'o':
             print(f"Error ({line}): Array ref {v.name} *must* be output",
                   file=sys.stderr)
             err += 1

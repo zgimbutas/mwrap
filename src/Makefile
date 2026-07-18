@@ -9,7 +9,7 @@ include ../make.inc
 		mwrap-typecheck.o mwrap-mgen.o mwrap-cgen.o \
 		lex.yy.o
 
-mwrap.o: mwrap.cc lex.yy.c mwrap-ast.h
+mwrap.o: mwrap.cc lex.yy.c mwrap-ast.h mwrap-version.h
 	$(CXX) -c mwrap.cc
 
 mwrap.cc mwrap.hh: mwrap.y
@@ -36,7 +36,7 @@ mwrap-ast.o: mwrap-ast.cc mwrap-ast.h
 mwrap-typecheck.o: mwrap-typecheck.cc mwrap-ast.h
 	$(CXX) -c -g mwrap-typecheck.cc
 
-mwrap-cgen.o: mwrap-cgen.cc mwrap-ast.h mwrap-support.h
+mwrap-cgen.o: mwrap-cgen.cc mwrap-ast.h mwrap-support.h mwrap-version.h
 	$(CXX) -c -g mwrap-cgen.cc
 
 mwrap-mgen.o: mwrap-mgen.cc mwrap-ast.h

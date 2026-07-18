@@ -11,6 +11,7 @@
 #include <string.h>
 #include <string>
 #include "mwrap-ast.h"
+#include "mwrap-version.h"
 
 extern "C" {
     int yylex();
@@ -40,6 +41,7 @@ FILE* outfp   = 0;                // MATLAB output file
 FILE* outcfp  = 0;                // C output file
 
 static int    type_errs = 0;            // Number of typecheck errors
+static int    syntax_errs = 0;          // Number of syntax errors
 static int    func_id = 0;              // Assign stub numbers
 static Func*  funcs   = 0;              // AST - linked list of functions
 static Func*  lastfunc = 0;             // Last link in funcs list
@@ -69,8 +71,9 @@ inline void add_func(Func* func)
     if (!funcs) {
         funcs = func;
         lastfunc = func;
+        func_lookup[id_string(func)] = func;
         return;
-    } 
+    }
 
     Func*& func_ptr = func_lookup[id_string(func)];
     if (func_ptr) {
@@ -251,6 +254,7 @@ int yyerror(const char* s)
 {
     fprintf(stderr, "Parse error (%s:%d): %s\n", current_ifname.c_str(),
             linenum, s);
+    ++syntax_errs;
     return 0;
 }
 
@@ -266,7 +270,7 @@ const char* usage_string =
 "Try 'mwrap --help' for more information.\n";
 
 const char* help_string =
-"mwrap 1.3 - MEX file generator for MATLAB and Octave\n"
+"mwrap " MWRAP_VERSION " - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"
@@ -352,14 +356,26 @@ int main(int argc, char** argv)
 
         if (yyin_count == 0) {
             fprintf(stderr, "%s", usage_string);
-            return 0;
+            return 1;
         }
 
         /* Now safe to open output files */
-        if (mfile)
+        if (mfile) {
             outfp = fopen(mfile, "w+");
-        if (cfile)
+            if (!outfp) {
+                fprintf(stderr, "Could not write %s\n", mfile);
+                return 1;
+            }
+        }
+        if (cfile) {
             outcfp = fopen(cfile, "w+");
+            if (!outcfp) {
+                fprintf(stderr, "Could not write %s\n", cfile);
+                if (outfp)
+                    fclose(outfp);
+                return 1;
+            }
+        }
 
         for (j = 1; j < argc; ++j) {
             if (strcmp(argv[j], "-m") == 0 ||
@@ -377,6 +393,8 @@ int main(int argc, char** argv)
             else {
                 linenum = 1;
                 type_errs = 0;
+                syntax_errs = 0;
+                include_stack_ptr = 0;
                 yyin = fopen(argv[j], "r");
                 if (yyin) {
                     current_ifname = argv[j];
@@ -384,15 +402,19 @@ int main(int argc, char** argv)
                         print_mex_init(outcfp);
                         emitted_mex_init = true;
                     }
-                    err_flag += yyparse();
+                    /* Recovered and unrecovered syntax errors alike are
+                       counted by yyerror via syntax_errs; adding yyparse's
+                       return here would double-count the unrecovered ones. */
+                    yyparse();
                     fclose(yyin);
                 } else {
                     fprintf(stderr, "Could not read %s\n", argv[j]);
+                    ++err_flag;
                 }
                 if (type_errs)
                     fprintf(stderr, "%s: %d type errors detected\n",
                             argv[j], type_errs);
-                err_flag += type_errs;
+                err_flag += type_errs + syntax_errs;
             }
         }
     }
@@ -404,5 +426,7 @@ int main(int argc, char** argv)
         fclose(outfp);
     if (outcfp)
         fclose(outcfp);
-    return err_flag;
+    /* POSIX keeps only 8 bits of the exit status; returning the raw
+       error count would report success at exact multiples of 256. */
+    return err_flag ? 1 : 0;
 }

@@ -59,12 +59,16 @@ cmake ..
 cmake --build .
 ```
 
-Cache options mirror the `make.inc` file.  For example, to enable
-MATLAB `classdef` support and the C99 complex helpers:
+To compile generated MEX wrappers with MATLAB `classdef` support
+(`-DR2008OO`), configure with:
 
 ```
-cmake -DMWRAP_ENABLE_MATLAB_CLASSDEF=ON -DMWRAP_ENABLE_C99_COMPLEX=ON ..
+cmake -DMWRAP_ENABLE_MATLAB_CLASSDEF=ON ..
 ```
+
+Note that C99/C++ complex support is not a build option: it is selected
+per run with the `-c99complex` or `-cppcomplex` command-line flags when
+invoking the `mwrap` executable.
 
 ### Building the MATLAB/Octave examples
 
@@ -103,9 +107,9 @@ cmake -DMWRAP_BUILD_EXAMPLES=ON -DMWRAP_COMPILE_MEX=ON -DMWRAP_MEX_BACKEND=ALL .
 
 If you leave `MWRAP_COMPILE_MEX` disabled, you can still invoke MATLAB or
 Octave's `mex` tool manually using the produced `.cc` file and any support
-sources that your project requires.  Optional flags such as
-`MWRAP_ENABLE_MATLAB_CLASSDEF` remain available while configuring the
-examples.
+sources that your project requires.  The `MWRAP_ENABLE_MATLAB_CLASSDEF`
+option applies to MEX wrappers compiled through CMake
+(`-DMWRAP_COMPILE_MEX=ON`).
 
 
 Example usage
@@ -155,5 +159,12 @@ Contributors: Marco Barbone, Zydrunas Gimbutas.
 - Validate input files before processing to prevent data loss
 - Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add Python mwrap implementation
+
+**Version 1.3.5** (2026)
+Contributors: Zydrunas Gimbutas, with Claude Code (Anthropic).
+- Bug-fix release: fix crashes in generated code with the Matlab R2018a
+  interleaved complex API, fix mwrap generator crashes and silent-success
+  exit codes, align the Python port with the flex lexer, and stamp
+  generated files with the full patch version; see NEWS for details
 
 Also see https://github.com/zgimbutas/mwrap/tags
