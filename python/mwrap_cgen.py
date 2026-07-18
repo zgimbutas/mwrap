@@ -453,6 +453,9 @@ def _unpack_input_array(fp, v):
                    f"            mw_err_txt_ = \"Invalid array argument, {tp.mxclass} expected\";\n"
                    f"        if (mw_err_txt_) goto mw_err_label;\n"
                    f"#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                   f"        if( mxIsComplex(prhs[{il}]) )\n"
+                   f"            mw_err_txt_ = \"Invalid array argument, real data expected\";\n"
+                   f"        if (mw_err_txt_) goto mw_err_label;\n"
                    f"        in{il}_ = {tp.accessor}(prhs[{il}]);\n"
                    f"#else\n")
             if bt == "double":
@@ -525,6 +528,8 @@ def _unpack_inputs_var(fp, ctx, args):
             tp = _type_props(bt)
             fp.write(f"    if( mxGetClassID(prhs[{il}]) != {tp.scalar_class} )\n"
                    f"        mw_err_txt_ = \"Invalid scalar argument, {tp.scalar_class} expected\";\n"
+                   f"    if( mxGetM(prhs[{il}])*mxGetN(prhs[{il}]) != 1 )\n"
+                   f"        mw_err_txt_ = \"Invalid scalar argument, scalar expected\";\n"
                    f"    if (mw_err_txt_) goto mw_err_label;\n")
             cs = _copier_suffix(bt)
             fp.write(f"    mxWrapGetScalar_{cs}{bt}(&in{il}_, prhs[{il}]);\n\n")

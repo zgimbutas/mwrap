@@ -822,11 +822,15 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 		"            mw_err_txt_ = \"Invalid array argument, mxSINGLE_CLASS expected\";\n"
 		"        if (mw_err_txt_) goto mw_err_label;\n"
                 "#if MX_HAS_INTERLEAVED_COMPLEX\n"
+                "        if( mxIsComplex(prhs[%d]) )\n"
+                "            mw_err_txt_ = \"Invalid array argument, real data expected\";\n"
+                "        if (mw_err_txt_) goto mw_err_label;\n"
                 "        in%d_ = mxGetSingles(prhs[%d]);\n"
                 "#else\n"
                 "        in%d_ = (float*) mxGetData(prhs[%d]);\n"
                 "#endif\n",
-                v->input_label, v->input_label, v->input_label, v->input_label, v->input_label);
+                v->input_label, v->input_label, v->input_label, v->input_label,
+                v->input_label, v->input_label);
       else
         fprintf(fp,
                 "        in%d_ = mxWrapGetArray_single_%s(prhs[%d], &mw_err_txt_);\n"
@@ -840,11 +844,15 @@ void mex_unpack_input_array(FILE* fp, Var* v)
 		"            mw_err_txt_ = \"Invalid array argument, mxDOUBLE_CLASS expected\";\n"
 		"        if (mw_err_txt_) goto mw_err_label;\n"
 		"#if MX_HAS_INTERLEAVED_COMPLEX\n"
+		"        if( mxIsComplex(prhs[%d]) )\n"
+		"            mw_err_txt_ = \"Invalid array argument, real data expected\";\n"
+		"        if (mw_err_txt_) goto mw_err_label;\n"
 		"        in%d_ = mxGetDoubles(prhs[%d]);\n"
 		"#else\n"
 		"        in%d_ = mxGetPr(prhs[%d]);\n"
 		"#endif\n",
-		v->input_label, v->input_label, v->input_label, v->input_label, v->input_label);
+		v->input_label, v->input_label, v->input_label, v->input_label,
+		v->input_label, v->input_label);
       }
       else
 		fprintf(fp,
@@ -960,8 +968,10 @@ void mex_unpack_inputs(FILE* fp, Var* v)
 	    fprintf(fp,
 		    "    if( mxGetClassID(prhs[%d]) != mxSINGLE_CLASS )\n"
 		    "        mw_err_txt_ = \"Invalid scalar argument, mxSINGLE_CLASS expected\";\n"
+		    "    if( mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 1 )\n"
+		    "        mw_err_txt_ = \"Invalid scalar argument, scalar expected\";\n"
 		    "    if (mw_err_txt_) goto mw_err_label;\n",
-		    v->input_label);
+		    v->input_label, v->input_label, v->input_label);
 	    fprintf(fp,
 		    "    mxWrapGetScalar_single_%s(&in%d_, prhs[%d]);\n\n",
 		    v->basetype, v->input_label, v->input_label);
@@ -971,8 +981,10 @@ void mex_unpack_inputs(FILE* fp, Var* v)
 	    fprintf(fp,
 		    "    if( mxGetClassID(prhs[%d]) != mxDOUBLE_CLASS )\n"
 		    "        mw_err_txt_ = \"Invalid scalar argument, mxDOUBLE_CLASS expected\";\n"
+		    "    if( mxGetM(prhs[%d])*mxGetN(prhs[%d]) != 1 )\n"
+		    "        mw_err_txt_ = \"Invalid scalar argument, scalar expected\";\n"
 		    "    if (mw_err_txt_) goto mw_err_label;\n",
-		    v->input_label);
+		    v->input_label, v->input_label, v->input_label);
 	    fprintf(fp,
 		    "    mxWrapGetScalar_%s(&in%d_, prhs[%d]);\n\n",
 		    v->basetype, v->input_label, v->input_label);

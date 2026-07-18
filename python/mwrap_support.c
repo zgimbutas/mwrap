@@ -223,7 +223,7 @@ void func(T* z, const mxArray* a) \
       } \
     else \
       {				   \
-  setz(z, (ZT) (*mxGetComplexDoubles(a)).real, (ZT) 0);	\
+  setz(z, (ZT) *mxGetDoubles(a), (ZT) 0);	\
       } \
 }
 
@@ -473,7 +473,7 @@ void func(T* z, const mxArray* a) \
       } \
     else \
       {				   \
-  setz(z, (ZT) (*mxGetComplexSingles(a)).real, (ZT) 0);	\
+  setz(z, (ZT) *mxGetSingles(a), (ZT) 0);	\
       } \
 }
 
