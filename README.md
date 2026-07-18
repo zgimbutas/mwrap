@@ -160,4 +160,11 @@ Contributors: Marco Barbone, Zydrunas Gimbutas.
 - Add `#include <stdint.h>` for int64_t/uint64_t on Windows msys2/mingw64
 - Add Python mwrap implementation
 
+**Version 1.3.5** (2026)
+Contributors: Zydrunas Gimbutas, with Claude Code (Anthropic).
+- Bug-fix release: fix crashes in generated code with the Matlab R2018a
+  interleaved complex API, fix mwrap generator crashes and silent-success
+  exit codes, align the Python port with the flex lexer, and stamp
+  generated files with the full patch version; see NEWS for details
+
 Also see https://github.com/zgimbutas/mwrap/tags
