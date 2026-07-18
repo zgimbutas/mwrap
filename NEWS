@@ -19,6 +19,12 @@ Unpack argument dimensions even when the return array also carries
 Python port: match the flex lexer on invalid characters, @include line
   numbers and filename parsing, indented $] terminators, one-line $[,
   and block-C state across includes; require Python 3.7+
+Fix duplicate-call bookkeeping: the first parsed call line no longer emits
+  a redundant second stub when repeated, and "Also at" comments and the
+  profiler report now list every duplicate occurrence, not just the first
+Fix unbraced loop body in the interleaved-complex mxWrapCopyDef, which
+  wrote one element past the end of the array and left imaginary parts
+  unset (backported from the v1.4 development branch)
 Fix crash when a real (non-complex) scalar is passed to a complex argument
   with the Matlab R2018a interleaved complex API
 Reject empty arrays passed to complex scalar arguments instead of crashing

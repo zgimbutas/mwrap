@@ -1547,7 +1547,7 @@ void print_c_comment(FILE* fp, Func* f)
 {
     fprintf(fp, "/* ---- %s: %d ----\n * ", f->fname.c_str(), f->line);
     print(fp, f);
-    for (Func* fsame = f->same_next; fsame; fsame = fsame->next)
+    for (Func* fsame = f->same_next; fsame; fsame = fsame->same_next)
         fprintf(fp, " * Also at %s: %d\n", fsame->fname.c_str(), fsame->line);
     fprintf(fp, " */\n");
 }
@@ -1598,7 +1598,7 @@ void make_profile_output(FILE* fp, Func* f, const char* printfunc)
     for (; f; f = f->next) {
         fprintf(fp, "        %s\"%%d calls to %s:%d",
                 printfunc, f->fname.c_str(), f->line);
-        for (Func* fsame = f->same_next; fsame; fsame = fsame->next)
+        for (Func* fsame = f->same_next; fsame; fsame = fsame->same_next)
             fprintf(fp, " (%s:%d)", fsame->fname.c_str(), fsame->line);
         fprintf(fp, "\\n\", mexprofrecord_[%d]);\n", f->id);
     }
