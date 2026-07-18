@@ -1138,7 +1138,7 @@ void mex_make_call(FILE* fp, Var* v, int first)
     if (!first)
         fprintf(fp, ", ");
 
-    char namebuf[128];
+    char namebuf[VNAME_BUFSIZE];
     if (v->tinfo == VT_obj || v->tinfo == VT_r_obj)
         fprintf(fp, "*%s", vname(v, namebuf));
     else if (v->tinfo == VT_mx && v->iospec == 'o')
@@ -1295,7 +1295,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 {
     if (v->devicespec != 'g'){
     Expr* e = v->qual->args;
-    char namebuf[128];
+    char namebuf[VNAME_BUFSIZE];
     const char* mtype = complex_tinfo(v) ? "mxCOMPLEX" : "mxREAL";
     const char* ws = "    ";
 
@@ -1419,7 +1419,7 @@ void mex_marshal_array(FILE* fp, Var* v)
 
 void mex_marshal_result(FILE* fp, Var* v, bool return_flag)
 {
-    char namebuf[1280];
+    char namebuf[VNAME_BUFSIZE];
     if (is_obj(v->tinfo) && is_mxarray_type(v->basetype)) {
         if (!return_flag)
             fprintf(fp, "    plhs[%d] = mxWrapSet_%s(%s);\n",
