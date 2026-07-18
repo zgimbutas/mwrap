@@ -312,7 +312,9 @@ int typecheck_args(Var* v, int line)
              v->tinfo == VT_r_obj || v->tinfo == VT_string)) {
             /* Object/string inputs compiled with the gpu qualifier as a
                no-op in 1.2; keep accepting them with a warning, and clear
-               the qualifier so codegen really does ignore it. */
+               the qualifier so codegen really does ignore it.  This relies
+               on typecheck running before the .m stub is printed and
+               before codegen reads devicespec (grammar action order). */
             fprintf(stderr, "Warning (%d): ", line);
             fprintf(stderr, "gpu qualifier on non-array %s is ignored\n",
                     v->name);

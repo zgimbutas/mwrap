@@ -1,0 +1,2 @@
+$int add3(int i) { return i+3; }
+# int k = add3(int 3);

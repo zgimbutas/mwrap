@@ -19,7 +19,10 @@ Fix stack buffer overflow on type or class names longer than 127 characters
 Reject gpu qualifier on non-array arguments that crashed the generator
   or produced non-compiling code; object/string inputs are still
   accepted with a warning, and the qualifier is cleared so the
-  generated code is genuinely unaffected
+  generated code is genuinely unaffected (interfaces using gpu on
+  object/string inputs must regenerate the .m and .c outputs together,
+  since the dispatch signature for those arguments changed)
+Exit with status 1 when flags are given but no input files
 Exit with an error when an input file cannot be read or an output file
   cannot be written, instead of silently succeeding
 Exit with an error and suppress C output when an input file contains

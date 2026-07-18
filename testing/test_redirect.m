@@ -1,0 +1,3 @@
+function test_redirect
+if test_redirect1(42) ~= 42, fprint('Failure: Redirection failed?'); end
+

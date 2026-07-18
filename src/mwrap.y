@@ -356,7 +356,7 @@ int main(int argc, char** argv)
 
         if (yyin_count == 0) {
             fprintf(stderr, "%s", usage_string);
-            return 0;
+            return 1;
         }
 
         /* Now safe to open output files */

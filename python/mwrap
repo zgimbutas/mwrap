@@ -107,7 +107,7 @@ def main():
 
     if not args.input_files:
         sys.stderr.write(USAGE_STRING)
-        return 0
+        return 1
 
     # --- Open output files ---
     outfp = None

@@ -198,6 +198,8 @@ def _typecheck_args(ctx, args, line):
                 # Object/string inputs compiled with the gpu qualifier as a
                 # no-op in 1.2; keep accepting them with a warning, and
                 # clear the qualifier so codegen really does ignore it.
+                # Relies on typecheck running before print_matlab_call and
+                # codegen read devicespec (parser calls typecheck first).
                 print(f"Warning ({line}): gpu qualifier on non-array {v.name} is ignored",
                       file=sys.stderr)
                 v.devicespec = 'c'
