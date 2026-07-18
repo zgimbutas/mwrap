@@ -9,6 +9,9 @@ Fix allocator mismatch in -i8 integer promotion (strdup freed by delete[])
 Remove the no-op MWRAP_ENABLE_C99_COMPLEX/MWRAP_ENABLE_CPP_COMPLEX CMake
   options; complex support is selected with -c99complex/-cppcomplex flags
 Fix missing newline in the generated 1-D array size check
+Use snprintf instead of sprintf in the generator (silences deprecation
+  warnings on modern toolchains; snprintf is within the existing
+  C99/C++11 requirement)
 Make doc/test/demo phony targets in the root Makefile, have make test
   build mwrap first, and gate the test_syntax reference comparison
 Fix crash when an @include appears in the second or later input file

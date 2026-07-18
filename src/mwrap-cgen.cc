@@ -80,14 +80,17 @@ bool nullable_return(Func* f)
 
 
 /*
- * Get the name of a variable into the provided buffer.
+ * Get the name of a variable into the provided buffer, which must
+ * have room for at least VNAME_BUFSIZE bytes.
  */
+static const size_t VNAME_BUFSIZE = 128;
+
 const char* vname(Var* v, char* buf)
 {
     if (v->iospec == 'o')
-        sprintf(buf, "out%d_", v->output_label);
+        snprintf(buf, VNAME_BUFSIZE, "out%d_", v->output_label);
     else
-        sprintf(buf, "in%d_", v->input_label);
+        snprintf(buf, VNAME_BUFSIZE, "in%d_", v->input_label);
     return buf;
 }
 
