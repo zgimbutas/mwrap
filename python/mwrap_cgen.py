@@ -412,7 +412,7 @@ def _check_dims(fp, args):
                        f"    }}\n\n")
             else:
                 fp.write(f"    if (mxGetM(prhs[{v.input_label}])*mxGetN(prhs[{v.input_label}]) != dim{a[0].input_label}_) {{\n"
-                       f"        mw_err_txt_ = \"Bad argument size: {v.name}\";"
+                       f"        mw_err_txt_ = \"Bad argument size: {v.name}\";\n"
                        f"        goto mw_err_label;\n"
                        f"    }}\n\n")
 

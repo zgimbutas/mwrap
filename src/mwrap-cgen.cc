@@ -736,7 +736,7 @@ void mex_check_dims(FILE* fp, Var* v)
         } else {
             fprintf(fp,
                     "    if (mxGetM(prhs[%d])*mxGetN(prhs[%d]) != dim%d_) {\n"
-                    "        mw_err_txt_ = \"Bad argument size: %s\";"
+                    "        mw_err_txt_ = \"Bad argument size: %s\";\n"
                     "        goto mw_err_label;\n"
                     "    }\n\n",
                     v->input_label, v->input_label, a->input_label,
