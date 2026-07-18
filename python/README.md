@@ -9,7 +9,7 @@ C++ version's functionality.
 
 ## Requirements
 
-- Python 3.6+
+- Python 3.7+
 - No external dependencies (uses only the standard library)
 
 ## Usage

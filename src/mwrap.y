@@ -40,6 +40,7 @@ FILE* outfp   = 0;                // MATLAB output file
 FILE* outcfp  = 0;                // C output file
 
 static int    type_errs = 0;            // Number of typecheck errors
+static int    syntax_errs = 0;          // Number of syntax errors
 static int    func_id = 0;              // Assign stub numbers
 static Func*  funcs   = 0;              // AST - linked list of functions
 static Func*  lastfunc = 0;             // Last link in funcs list
@@ -251,6 +252,7 @@ int yyerror(const char* s)
 {
     fprintf(stderr, "Parse error (%s:%d): %s\n", current_ifname.c_str(),
             linenum, s);
+    ++syntax_errs;
     return 0;
 }
 
@@ -389,6 +391,7 @@ int main(int argc, char** argv)
             else {
                 linenum = 1;
                 type_errs = 0;
+                syntax_errs = 0;
                 include_stack_ptr = 0;
                 yyin = fopen(argv[j], "r");
                 if (yyin) {
@@ -406,7 +409,7 @@ int main(int argc, char** argv)
                 if (type_errs)
                     fprintf(stderr, "%s: %d type errors detected\n",
                             argv[j], type_errs);
-                err_flag += type_errs;
+                err_flag += type_errs + syntax_errs;
             }
         }
     }

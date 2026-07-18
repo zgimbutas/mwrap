@@ -192,6 +192,9 @@ run_equiv_test test_char \
     "$SCRIPT_DIR/test_char.mw" .cc no \
     -cppcomplex
 
+run_equiv_test test_lexer_edge \
+    "$SCRIPT_DIR/test_lexer_edge.mw" .cc yes
+
 # ----------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------

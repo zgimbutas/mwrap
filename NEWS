@@ -8,6 +8,14 @@ Reject gpu qualifier on non-array arguments that crashed the generator
   qualifier was a working no-op, are still accepted with a warning
 Exit with an error when an input file cannot be read or an output file
   cannot be written, instead of silently succeeding
+Exit with an error and suppress C output when an input file contains
+  syntax errors, instead of exiting 0 after Bison error recovery
+Reject inout array references ([]&), which generated non-compiling code
+Unpack argument dimensions even when the return array also carries
+  dimensions; the generated size check read an uninitialized dimension
+Python port: match the flex lexer on invalid characters, @include line
+  numbers and filename parsing, indented $] terminators, one-line $[,
+  and block-C state across includes; require Python 3.7+
 Fix crash when a real (non-complex) scalar is passed to a complex argument
   with the Matlab R2018a interleaved complex API
 Reject empty arrays passed to complex scalar arguments instead of crashing

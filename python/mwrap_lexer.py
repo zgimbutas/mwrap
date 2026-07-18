@@ -54,6 +54,8 @@ _TOKEN_RE = re.compile(
     r"|([0-9]+)"                # number
     r"|([->()\[\],;*&=:.])"     # punctuation
     r"|[ \t\r]+"                # whitespace — skip
+    r"|(.)"                     # anything else — passed through like flex's
+                                # CSTATE catch-all so the parser rejects it
 )
 
 
@@ -123,9 +125,16 @@ class Lexer:
     # ------------------------------------------------------------------
 
     def _handle_block_c(self, line):
-        """Process a line in block C mode. Returns False when block ends."""
-        stripped = line.rstrip('\r\n')
-        if re.match(r'^\$\][ \t\r]*$', stripped):
+        """Process a line in block C mode. Returns False when block ends.
+
+        Like flex's BSTATE, the "$]" terminator may appear anywhere in the
+        line as long as only whitespace follows it; any characters before
+        it are written to the C output.
+        """
+        m = re.search(r'\$\][ \t\r]*\n$', line)
+        if m:
+            if self.outcfp:
+                self.outcfp.write(line[:m.start()])
             self.linenum += 1
             return False
         if self.outcfp:
@@ -160,27 +169,47 @@ class Lexer:
         yield Token(TokenType.NON_C_LINE, "", self.linenum - 1)
 
     def _handle_include(self, stripped):
-        """Handle @include directive. Pushes current file onto stack."""
-        rest = stripped[len("@include"):].strip().rstrip('\r\n')
+        """Handle @include directive. Pushes current file onto stack.
+
+        Like flex, this emits a NON_C_LINE token (so a missing ';' on the
+        preceding declaration is reported at the @include line of the
+        parent file), takes whitespace-separated tokens as filenames
+        (several tokens are included in sequence), and resumes the parent
+        file with the line after the @include line.
+        """
+        rest = stripped[len("@include"):].rstrip('\r\n')
+        names = rest.split()
+        yield Token(TokenType.NON_C_LINE, "", self.linenum)
+        resume_linenum = self.linenum + 1
+        if not names:
+            self.linenum = resume_linenum
+            return
         if len(self._file_stack) >= 10:
             print("Error: Includes nested too deeply",
                   file=sys.stderr)
             sys.exit(1)
         self._file_stack.append(
-            (self._current_fp, self.linenum, self.current_ifname))
+            (self._current_fp, resume_linenum, self.current_ifname,
+             names[1:]))
+        self._open_include(names[0])
+
+    def _open_include(self, name):
+        """Switch the token stream to an included file."""
         try:
-            new_fp = open(rest, "r")
+            new_fp = open(name, "r")
         except OSError:
-            print(f"Error: Could not read '{rest}'",
+            print(f"Error: Could not read '{name}'",
                   file=sys.stderr)
             sys.exit(1)
-        self.current_ifname = rest
+        self.current_ifname = name
         self.linenum = 1
         self._current_fp = new_fp
 
     def _handle_redirect(self, stripped):
-        """Handle @ redirect directive."""
-        rest = stripped[1:].strip().rstrip('\r\n')
+        """Handle @ redirect directive. Only the first whitespace-separated
+        token names the output file, matching flex's ASTATE rules."""
+        names = stripped[1:].rstrip('\r\n').split()
+        rest = names[0] if names else ""
         if self.mbatching_flag:
             if self.outfp:
                 self.outfp.close()
@@ -222,10 +251,22 @@ class Lexer:
         while True:
             raw_line = self._current_fp.readline()
             if raw_line == "":
-                # End of current file
+                # End of current file: pop the include stack.  Like flex
+                # (whose EOF rule leaves BSTATE), an unterminated $[ block
+                # does not leak into the parent file.
                 if self._file_stack:
                     self._current_fp.close()
-                    self._current_fp, self.linenum, self.current_ifname = self._file_stack.pop()
+                    in_block_c = False
+                    fp, lnum, ifname, pending = self._file_stack.pop()
+                    if pending:
+                        # Additional filenames on the same @include line
+                        self._file_stack.append(
+                            (fp, lnum, ifname, pending[1:]))
+                        self._open_include(pending[0])
+                    else:
+                        self._current_fp = fp
+                        self.linenum = lnum
+                        self.current_ifname = ifname
                     continue
                 else:
                     return       # real EOF
@@ -253,8 +294,10 @@ class Lexer:
                     stripped.startswith("//")):
                 self.outfp.write(leading_ws)
 
-            # $[ block start
-            if re.match(r'^\$\[[ \t\r]*\n?$', stripped):
+            # $[ block start (only when nothing but whitespace follows,
+            # matching flex's \$\[[ \t\r]*\n rule; otherwise the line
+            # falls through to the single-$ rule)
+            if re.match(r'^\$\[[ \t\r]*\n$', stripped):
                 in_block_c = True
                 self.linenum += 1
                 continue
@@ -268,14 +311,14 @@ class Lexer:
                 continue
 
             if stripped.startswith("@include"):
-                self._handle_include(stripped)
+                yield from self._handle_include(stripped)
                 continue
 
             if stripped.startswith("@"):
                 yield from self._handle_redirect(stripped)
                 continue
 
-            if stripped.startswith("$") and not stripped.startswith("$["):
+            if stripped.startswith("$"):
                 yield from self._handle_dollar_line(stripped)
                 continue
 
@@ -296,7 +339,7 @@ class Lexer:
     def _tokenize_c_line(self, body, line):
         """Yield tokens for the body of a '#' line."""
         for m in _TOKEN_RE.finditer(body):
-            comment, string, ident, number, punct = m.groups()
+            comment, string, ident, number, punct, other = m.groups()
             if comment:
                 break        # rest of line is a comment
             if string:
@@ -308,3 +351,5 @@ class Lexer:
                 yield Token(TokenType.NUMBER, number, line)
             elif punct:
                 yield Token(TokenType.PUNCT, punct, line)
+            elif other:
+                yield Token(TokenType.PUNCT, other, line)

@@ -345,7 +345,7 @@ int typecheck_args(Var* v, int line)
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Output array %s must have dims\n", v->name);
         ++err;
-    } else if (v->tinfo == VT_rarray && v->iospec != 'o' && v->iospec != 'b') {
+    } else if (v->tinfo == VT_rarray && v->iospec != 'o') {
         fprintf(stderr, "Error (%d): ", line);
         fprintf(stderr, "Array ref %s *must* be output\n", v->name);
         ++err;

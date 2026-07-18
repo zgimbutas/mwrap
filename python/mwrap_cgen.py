@@ -24,7 +24,7 @@ from mwrap_ast import (
 @dataclass(frozen=True)
 class TypeProps:
     mxclass: str             # "mxDOUBLE_CLASS", "mxSINGLE_CLASS", etc.
-    accessor: str | None     # interleaved API accessor: "mxGetDoubles", etc.
+    accessor: "str | None"   # interleaved API accessor: "mxGetDoubles", etc.
     is_single: bool          # True → use _single copier variants
     scalar_getter: str       # "mxWrapGetScalar" / "_single" / "_char"
     scalar_class: str        # mxClass for scalar validation

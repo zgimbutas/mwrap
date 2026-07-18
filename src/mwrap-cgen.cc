@@ -701,7 +701,9 @@ int mex_unpack_dims(FILE* fp, Var* v)
 
 void mex_unpack_dims(FILE* fp, Func* f)
 {
-    if (mex_unpack_dims(fp, f->ret) || mex_unpack_dims(fp, f->args))
+    int count = mex_unpack_dims(fp, f->ret);
+    count += mex_unpack_dims(fp, f->args);
+    if (count)
         fprintf(fp, "\n");
 }
 

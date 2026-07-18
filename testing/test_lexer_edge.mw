@@ -1,0 +1,14 @@
+% Lexer edge cases pinned for C++/Python parity (test_python.sh only;
+% the generated C is compared byte-for-byte but never compiled).
+function test_lexer_edge()
+
+$[
+/* block C section closed by an indented terminator */
+  $]
+
+$[ /* one-line $[ is not a block start; this goes through the $ rule */ $]
+
+@include test_include2.mw
+
+% Post-include declaration: pins file/line provenance after an @include
+# double[n] y = scalevec(double[m] x, int n, int m);

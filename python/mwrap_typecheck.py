@@ -224,7 +224,7 @@ def _typecheck_args(ctx, args, line):
             print(f"Error ({line}): Output array {v.name} must have dims",
                   file=sys.stderr)
             err += 1
-        elif v.tinfo == VT.rarray and not iospec_is_output(v.iospec):
+        elif v.tinfo == VT.rarray and v.iospec != 'o':
             print(f"Error ({line}): Array ref {v.name} *must* be output",
                   file=sys.stderr)
             err += 1
