@@ -356,10 +356,22 @@ int main(int argc, char** argv)
         }
 
         /* Now safe to open output files */
-        if (mfile)
+        if (mfile) {
             outfp = fopen(mfile, "w+");
-        if (cfile)
+            if (!outfp) {
+                fprintf(stderr, "Could not write %s\n", mfile);
+                return 1;
+            }
+        }
+        if (cfile) {
             outcfp = fopen(cfile, "w+");
+            if (!outcfp) {
+                fprintf(stderr, "Could not write %s\n", cfile);
+                if (outfp)
+                    fclose(outfp);
+                return 1;
+            }
+        }
 
         for (j = 1; j < argc; ++j) {
             if (strcmp(argv[j], "-m") == 0 ||
@@ -377,6 +389,7 @@ int main(int argc, char** argv)
             else {
                 linenum = 1;
                 type_errs = 0;
+                include_stack_ptr = 0;
                 yyin = fopen(argv[j], "r");
                 if (yyin) {
                     current_ifname = argv[j];
@@ -388,6 +401,7 @@ int main(int argc, char** argv)
                     fclose(yyin);
                 } else {
                     fprintf(stderr, "Could not read %s\n", argv[j]);
+                    ++err_flag;
                 }
                 if (type_errs)
                     fprintf(stderr, "%s: %d type errors detected\n",

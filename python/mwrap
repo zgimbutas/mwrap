@@ -112,9 +112,19 @@ def main():
     outfp = None
     outcfp = None
     if args.mfile:
-        outfp = open(args.mfile, "w")
+        try:
+            outfp = open(args.mfile, "w")
+        except OSError:
+            sys.stderr.write(f"Could not write {args.mfile}\n")
+            return 1
     if args.cfile:
-        outcfp = open(args.cfile, "w")
+        try:
+            outcfp = open(args.cfile, "w")
+        except OSError:
+            sys.stderr.write(f"Could not write {args.cfile}\n")
+            if outfp:
+                outfp.close()
+            return 1
 
     # --- Create lexer and parser ---
     lexer = Lexer(outfp=outfp, outcfp=outcfp,
@@ -134,6 +144,7 @@ def main():
             fp_test.close()
         except OSError:
             sys.stderr.write(f"Could not read {infile}\n")
+            err_flag += 1
             continue
 
         lexer.current_ifname = infile

@@ -538,22 +538,22 @@ void mex_cast_get_p(FILE* fp, const char* basetype, int input_label)
  */
 
 
-void mex_declare_type(char* typebuf, Var* v)
+string mex_declare_type(Var* v)
 {
     if (is_obj(v->tinfo) || is_array(v->tinfo)){
         if(v->devicespec == 'g'){
-            sprintf(typebuf, "%s*", basetype_to_cucomplex(v->basetype));
+            return string(basetype_to_cucomplex(v->basetype)) + "*";
         }
         else{
-            sprintf(typebuf, "%s*", v->basetype);
+            return string(v->basetype) + "*";
         }
     }
     else if (v->tinfo == VT_rarray){
         if(v->devicespec == 'g'){
-            sprintf(typebuf, "const %s*", basetype_to_cucomplex(v->basetype));
+            return string("const ") + basetype_to_cucomplex(v->basetype) + "*";
         }
         else{
-            sprintf(typebuf, "const %s*", v->basetype);
+            return string("const ") + v->basetype + "*";
         }
     }
     else if (v->tinfo == VT_scalar ||
@@ -565,16 +565,17 @@ void mex_declare_type(char* typebuf, Var* v)
              v->tinfo == VT_p_scalar ||
              v->tinfo == VT_p_cscalar ||
              v->tinfo == VT_p_zscalar)
-        sprintf(typebuf, "%s", v->basetype);
+        return string(v->basetype);
     else if (v->tinfo == VT_string)
-        sprintf(typebuf, "char*");
+        return string("char*");
     else if (v->tinfo == VT_mx && v->iospec == 'i')
-        sprintf(typebuf, "const mxArray*");
+        return string("const mxArray*");
     else if (v->tinfo == VT_mx && v->iospec == 'o')
-        sprintf(typebuf, "mxArray*");
+        return string("mxArray*");
     else {
         fprintf(stderr, "v->tinfo == %d; v->name = %s\n", v->tinfo, v->name);
         assert(0);
+        return string();
     }
 }
 
@@ -584,18 +585,17 @@ void mex_declare_in_args(FILE* fp, Var* v)
     if (!v)
         return;
     if (v->iospec != 'o' && v->tinfo != VT_const) {
-        char typebuf[128];
-        mex_declare_type(typebuf, v);
+        string typebuf = mex_declare_type(v);
         if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
             fprintf(fp, "    %-10s  in%d_ =0; /* %-10s */\n",
-                    typebuf, v->input_label, v->name);
+                    typebuf.c_str(), v->input_label, v->name);
             if(v->devicespec == 'g'){
                 fprintf(fp, "    %-10s *mxGPUArray_in%d_ =0; /* %-10s */\n",
                        "mxGPUArray const", v->input_label, v->name);
             }
         } else {
             fprintf(fp, "    %-10s  in%d_;    /* %-10s */\n",
-                    typebuf, v->input_label, v->name);
+                    typebuf.c_str(), v->input_label, v->name);
         }
     }
     mex_declare_in_args(fp, v->next);
@@ -607,11 +607,10 @@ void mex_declare_out_args(FILE* fp, Var* v)
     if (!v)
         return;
     if (v->iospec == 'o' && v->tinfo != VT_mx) {
-        char typebuf[128];
-        mex_declare_type(typebuf, v);
+        string typebuf = mex_declare_type(v);
         if (is_array(v->tinfo) || is_obj(v->tinfo) || v->tinfo == VT_string) {
             fprintf(fp, "    %-10s  out%d_=0; /* %-10s */\n",
-                    typebuf, v->output_label, v->name);
+                    typebuf.c_str(), v->output_label, v->name);
             if(v->devicespec == 'g'){
                 fprintf(fp, "    %-10s *mxGPUArray_out%d_ =0; /* %-10s */\n",
                        "mxGPUArray", v->output_label, v->name);
@@ -620,7 +619,7 @@ void mex_declare_out_args(FILE* fp, Var* v)
             }
         } else {
             fprintf(fp, "    %-10s  out%d_;   /* %-10s */\n",
-                    typebuf, v->output_label, v->name);
+                    typebuf.c_str(), v->output_label, v->name);
         }
     }
     mex_declare_out_args(fp, v->next);
@@ -656,11 +655,9 @@ void mex_declare_return(FILE* fp, Var* v)
 void mex_declare_args(FILE* fp, Func* f)
 {
     if (f->thisv) {
-        char typebuf[128];
-        strcpy(typebuf, f->classv);
-        strcat(typebuf, "*");
+        string typebuf = string(f->classv) + "*";
         fprintf(fp, "    %-10s  in%d_ =0; /* %-10s */\n",
-                typebuf, 0, f->thisv);
+                typebuf.c_str(), 0, f->thisv);
     }
     mex_declare_in_args(fp, f->args);
     if (!nullable_return(f))

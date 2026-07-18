@@ -1,6 +1,13 @@
 Recent updates:
 
 Unreleased:
+Fix crash when an @include appears in the second or later input file
+Fix stack buffer overflow on type or class names longer than 127 characters
+Reject gpu qualifier on non-array arguments that crashed the generator
+  or produced non-compiling code; object/string inputs, where the
+  qualifier was a working no-op, are still accepted with a warning
+Exit with an error when an input file cannot be read or an output file
+  cannot be written, instead of silently succeeding
 Fix crash when a real (non-complex) scalar is passed to a complex argument
   with the Matlab R2018a interleaved complex API
 Reject empty arrays passed to complex scalar arguments instead of crashing
