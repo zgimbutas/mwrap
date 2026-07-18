@@ -195,6 +195,10 @@ run_equiv_test test_char \
 run_equiv_test test_lexer_edge \
     "$SCRIPT_DIR/test_lexer_edge.mw" .cc yes
 
+run_equiv_test test_i8 \
+    "$SCRIPT_DIR/test_transfers.mw" .cc yes \
+    -i8
+
 # ----------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------

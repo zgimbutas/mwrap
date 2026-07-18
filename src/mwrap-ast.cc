@@ -62,6 +62,12 @@ void init_scalar_types()
 }
 
 
+static char* promote_to(char* name, const char* newtype)
+{
+    delete[] name;
+    return mwrap_strdup(newtype);
+}
+
 char *promote_int(char* name)
 {
   /* Detect C99 types: int32_t, int64_t, uint32_t, uint64_t */
@@ -75,21 +81,23 @@ char *promote_int(char* name)
   if( strcmp(name,"ushort") == 0 ) mw_use_ushort = 1;
   if( strcmp(name,"uchar") == 0 ) mw_use_uchar = 1;
 
-  /* Promote integers */
+  /* Promote integers.  The replacement string must be allocated with
+     mwrap_strdup (new[]), matching destroy(Var)'s delete[]; the caller's
+     original name string is released here. */
   if( mw_promote_int == 1 )
     {      
       if( strcmp(name,"uint") == 0 ) mw_use_ulong = 1;
-      if( strcmp(name,"int") == 0 ) return strdup("long");
-      if( strcmp(name,"uint") == 0 ) return strdup("ulong");
+      if( strcmp(name,"int") == 0 ) return promote_to(name, "long");
+      if( strcmp(name,"uint") == 0 ) return promote_to(name, "ulong");
     }
   if( mw_promote_int == 2 )
     {      
       if( strcmp(name,"uint") == 0 ) mw_use_ulong = 1;
       if( strcmp(name,"ulong") == 0 ) mw_use_ulong = 1;
-      if( strcmp(name,"int") == 0 ) return strdup("long");
-      if( strcmp(name,"long") == 0 ) return strdup("long");
-      if( strcmp(name,"uint") == 0 ) return strdup("ulong");
-      if( strcmp(name,"ulong") == 0 ) return strdup("ulong");
+      if( strcmp(name,"int") == 0 ) return promote_to(name, "long");
+      if( strcmp(name,"long") == 0 ) return promote_to(name, "long");
+      if( strcmp(name,"uint") == 0 ) return promote_to(name, "ulong");
+      if( strcmp(name,"ulong") == 0 ) return promote_to(name, "ulong");
     }
   if( mw_promote_int == 3 )
     {      
@@ -97,10 +105,10 @@ char *promote_int(char* name)
       if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;
       if( strcmp(name,"uint") == 0 ) mw_use_uint32_t = 1;
       if( strcmp(name,"ulong") == 0 ) mw_use_uint64_t = 1;
-      if( strcmp(name,"int") == 0 ) return strdup("int32_t");
-      if( strcmp(name,"long") == 0 ) return strdup("int32_t");
-      if( strcmp(name,"uint") == 0 ) return strdup("uint64_t");
-      if( strcmp(name,"ulong") == 0 ) return strdup("uint64_t");
+      if( strcmp(name,"int") == 0 ) return promote_to(name, "int32_t");
+      if( strcmp(name,"long") == 0 ) return promote_to(name, "int32_t");
+      if( strcmp(name,"uint") == 0 ) return promote_to(name, "uint64_t");
+      if( strcmp(name,"ulong") == 0 ) return promote_to(name, "uint64_t");
     }
   if( mw_promote_int == 4 )
     {      
@@ -108,10 +116,10 @@ char *promote_int(char* name)
       if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;
       if( strcmp(name,"uint") == 0 ) mw_use_uint64_t = 1;
       if( strcmp(name,"ulong") == 0 ) mw_use_uint64_t = 1;
-      if( strcmp(name,"int") == 0 ) return strdup("int64_t");
-      if( strcmp(name,"long") == 0 ) return strdup("int64_t");
-      if( strcmp(name,"uint") == 0 ) return strdup("uint64_t");
-      if( strcmp(name,"ulong") == 0 ) return strdup("uint64_t");
+      if( strcmp(name,"int") == 0 ) return promote_to(name, "int64_t");
+      if( strcmp(name,"long") == 0 ) return promote_to(name, "int64_t");
+      if( strcmp(name,"uint") == 0 ) return promote_to(name, "uint64_t");
+      if( strcmp(name,"ulong") == 0 ) return promote_to(name, "uint64_t");
     }
   return name;
 }
