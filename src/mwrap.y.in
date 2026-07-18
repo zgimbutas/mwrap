@@ -11,6 +11,7 @@
 #include <string.h>
 #include <string>
 #include "mwrap-ast.h"
+#include "mwrap-version.h"
 
 extern "C" {
     int yylex();
@@ -268,7 +269,7 @@ const char* usage_string =
 "Try 'mwrap --help' for more information.\n";
 
 const char* help_string =
-"mwrap 1.3 - MEX file generator for MATLAB and Octave\n"
+"mwrap " MWRAP_VERSION " - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]\n"

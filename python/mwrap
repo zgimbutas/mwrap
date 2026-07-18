@@ -22,10 +22,11 @@ from mwrap_ast import MwrapContext
 from mwrap_lexer import Lexer
 from mwrap_parser import Parser
 from mwrap_cgen import print_mex_init, print_mex_file
+from mwrap_version import __version__
 
 
-HELP_STRING = """\
-mwrap 1.3 - MEX file generator for MATLAB and Octave
+HELP_STRING = f"""\
+mwrap {__version__} - MEX file generator for MATLAB and Octave
 
 Syntax:
   mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb] [-list]
