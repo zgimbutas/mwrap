@@ -28,12 +28,14 @@ test_c99_complex:
 		-m test_c99_complex.m test_c99_complex.mw
 	$(MEX) test_c99_complexmex.c
 
-# the following two are designed to create mwrap errors, and compared against
-# log files. For now, since they would break the make process, the minus signs
-# prevent them from being made.
+# The following two are designed to create mwrap errors, whose stderr is
+# compared against reference files. The minus sign only ignores mwrap's
+# (intentional) nonzero exit status; the diff still gates the test.
+# Bison >= 3.6 says "end of file" where older versions said "$end", so the
+# log is normalized before comparison (as in CMake and test_python.sh).
 test_syntax:
 	- $(MWRAP) -cppcomplex test_syntax.mw 2> test_syntax.log
-	- diff test_syntax.log test_syntax.ref
+	sed 's/end of file/$$end/g' test_syntax.log | diff - test_syntax.ref
 
 test_typecheck:
 	- $(MWRAP) -cppcomplex test_typecheck.mw 2> test_typecheck.log
