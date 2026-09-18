@@ -1,30 +1,9 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with
-code in this repository.
-
-## Project Overview
-
-MWrap is a MEX interface generator: from annotated `.mw` interface files it
-produces a C MEX gateway (`-c out.c`) and MATLAB/Octave caller scripts
-(`-m`/`-mb`) for wrapping C/C++/Fortran/CUDA functions. There are two
-implementations that must produce **byte-identical output**:
-
-- `src/` — the original C++ implementation (Flex/Bison)
-- `python/` — a pure-Python port (Python 3.7+, no dependencies, no build step)
-
-The processing pipeline in both is: Lexer → Parser → Type Checker → Code
-Generator. File correspondence:
-
-| C++ | Python |
-|---|---|
-| `src/mwrap.l` (flex) | `python/mwrap_lexer.py` |
-| `src/mwrap.y.in` → `mwrap.y` (bison grammar + `main`) | `python/mwrap_parser.py`, `python/mwrap` |
-| `src/mwrap-typecheck.cc` | `python/mwrap_typecheck.py` |
-| `src/mwrap-cgen.cc` | `python/mwrap_cgen.py` |
-| `src/mwrap-mgen.cc` | `python/mwrap_mgen.py` |
-| `src/mwrap-ast.{h,cc}` | `python/mwrap_ast.py` |
-| `src/mwrap-support.c` (runtime helpers) | `python/mwrap_support.c` |
+MWrap is a MEX interface generator with two implementations, `src/` (C++,
+Flex/Bison) and `python/` (pure Python 3.7+, no build step), that must
+produce **byte-identical output**. See README.md for what mwrap does and
+how the sources pair up.
 
 ## Critical invariants — read before editing
 
@@ -69,46 +48,19 @@ Generator. File correspondence:
    "end of file" where the ref says `$end`; the CMake and Python harnesses
    normalize this).
 
-## Build
+## Build and test notes
 
-### Makefile (primary for development)
-
-```bash
-make          # or `make bin`: builds ./mwrap (requires flex + bison)
-make test     # builds mwrap, then generates, compiles (mkoctfile --mex),
-              # and runs the test suite under Octave
-```
-
-`make.inc` selects the MEX backend (MATLAB `mex` vs Octave `mkoctfile --mex`)
-and flags.
-
-### CMake
-
-```bash
-mkdir -p build && cd build && cmake .. && cmake --build .
-ctest                       # test_syntax + test_typecheck log tests
-```
-
-Options: `MWRAP_ENABLE_MATLAB_CLASSDEF` (adds `-DR2008OO` to MEX wrappers
-compiled via `cmake/MwrapAddMex.cmake`), `MWRAP_BUILD_EXAMPLES`,
-`MWRAP_COMPILE_MEX`, `MWRAP_MEX_BACKEND=MATLAB|OCTAVE|ALL`.
-Complex support is not a build option — it is selected per run with the
-`-c99complex` / `-cppcomplex` command-line flags.
-
-### Python version
-
-No build. Run directly: `python/mwrap -mex name -c out.c -m out.m input.mw`
-
-## Tests
-
-- `bash testing/test_python.sh ./mwrap python/mwrap` — the parity suite:
-  reference-file checks (`test_syntax`, `test_typecheck`) plus byte-diff of
-  C++ vs Python generated output for every feature area. Run this after any
-  change to either implementation.
-- `make test` (repo root) — Octave end-to-end: generates wrappers, compiles
-  them with `mkoctfile --mex`, runs `testing/test_all.m`. Failures print
-  `Failure: ...` lines (grep for them; the run itself does not exit nonzero
-  on tassert failures).
+- `make` (or `make bin`) builds `./mwrap` and needs flex + bison; `make.inc`
+  selects the MEX backend (MATLAB `mex` vs Octave `mkoctfile --mex`). CMake
+  is the alternative (`ctest` runs the syntax/typecheck log tests).
+- Complex support is not a build option — it is selected per run with the
+  `-c99complex` / `-cppcomplex` command-line flags.
+- The Python version needs no build:
+  `python/mwrap -mex name -c out.c -m out.m input.mw`.
+- `make test` (repo root) is the Octave end-to-end run: generates wrappers,
+  compiles them with `mkoctfile --mex`, runs `testing/test_all.m`. Failures
+  print `Failure: ...` lines — grep for them; the run itself does not exit
+  nonzero on tassert failures.
 - MATLAB: `testing/run_matlab_tests.m` (used by CI), or build the examples
   via CMake with `-DMWRAP_COMPILE_MEX=ON`.
 - GPU tests (`testing/test_gpu*.mw`) need MATLAB + Parallel Computing Toolbox
